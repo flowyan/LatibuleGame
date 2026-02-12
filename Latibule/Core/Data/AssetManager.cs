@@ -17,7 +17,7 @@ public static class AssetManager
     public static readonly Dictionary<string, Effect> Shaders = [];
 
     // keyed by texture path
-    public static readonly Dictionary<string, Texture2D> LoadedTextures = new();
+    private static readonly Dictionary<string, Texture2D> LoadedTextures = new();
     public static readonly Dictionary<string, IntPtr> LoadedImGuiTextures = new();
 
     public static readonly Dictionary<string, SoundEffect> LoadedSoundsList = [];
@@ -36,50 +36,24 @@ public static class AssetManager
 
     private static void LoadTextures(ContentManager content, GraphicsDevice graphics)
     {
-        HashSet<string> textures = [];
+        var textureDir = new DirectoryInfo($"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_TEXTURE_PATH}");
+        if (!textureDir.Exists) throw new Exception($"Missing texture directory: {textureDir.FullName}");
 
-        foreach (var mat in Enum.GetValues<Material>())
+        foreach (var file in textureDir.EnumerateFiles(searchPattern: "*.*", searchOption: SearchOption.AllDirectories))
         {
-            textures.Add($"material/{mat.ToString().ToLower()}");
-        }
-
-        // Always ensure we have a fallback
-        var missingTexPath = "missing";
-        Texture2D missingTex;
-        try
-        {
-            missingTex = content.Load<Texture2D>($"{Metadata.ASSETS_TEXTURE_PATH}/{missingTexPath}");
-        }
-        catch
-        {
-            LogError($"Critical: Missing fallback texture '{missingTexPath}', creating red placeholder.");
-            missingTex = new Texture2D(graphics, 16, 16);
-            var colorData = Enumerable.Repeat(Color.Purple, 16 * 16).ToArray();
-            missingTex.SetData(colorData);
-        }
-
-        foreach (var key in textures)
-        {
+            var parentFolderName = file.Directory?.Name == Metadata.ASSETS_TEXTURE_PATH ? "" : $"{file.Directory?.Name}/";
+            var textureName = $"{parentFolderName}{file.Name.Replace(file.Extension, "")}";
             try
             {
-                LoadedTextures[key] = content.Load<Texture2D>($"{Metadata.ASSETS_TEXTURE_PATH}/{key}");
-                LoadedImGuiTextures[key] = LatibuleGame.ImGuiRenderer.BindTexture(LoadedTextures[key]);
-                LogInfo($"Loaded texture: {key}");
+                var texture = content.Load<Texture2D>($"{Metadata.ASSETS_TEXTURE_PATH}/{parentFolderName}{file.Name}");
+                LoadedTextures[textureName] = texture;
+                LoadedImGuiTextures[textureName] = LatibuleGame.ImGuiRenderer.BindTexture(LoadedTextures[textureName]);
+                LogInfo($"Loaded texture: {textureName} ({file.Name})");
             }
-            catch
+            catch (Exception e)
             {
-                LogWarning($"Missing texture: {key}");
-                LoadedTextures[key] = content.Load<Texture2D>($"{Metadata.ASSETS_TEXTURE_PATH}/missing");
-                LoadedImGuiTextures[key] = LatibuleGame.ImGuiRenderer.BindTexture(LoadedTextures[key]);
+                LogError($"Failed to load sound: {textureName} ({file.Name}) - {e}");
             }
-        }
-
-        // If for some reason no paths were found, at least insert the fallback
-        if (LoadedTextures.Count == 0)
-        {
-            LogWarning("Warning: No block textures found in JSON, inserting fallback.");
-            LoadedTextures[missingTexPath] = missingTex;
-            LoadedImGuiTextures[missingTexPath] = LatibuleGame.ImGuiRenderer.BindTexture(missingTex);
         }
     }
 
@@ -129,11 +103,30 @@ public static class AssetManager
         }
     }
 
-    public static void PlaySound(string soundName, float volume = 0.5f, bool randomPitch = true)
+    public static Texture2D GetTexture(TextureAsset textureAsset)
     {
+        // parse the texture path and return the texture
+        var textureName = textureAsset.ToString().ToLower().Replace("_", "/");
+        return LoadedTextures[textureName];
+    }
+
+    public static void PlaySound(SoundAsset soundAsset, float volume = 0.5f, bool randomPitch = true)
+    {
+        var soundName = soundAsset.ToString().ToLower();
         var sound = LoadedSoundsList[soundName].CreateInstance();
         sound.Volume = volume;
         sound.Pitch = randomPitch ? (float)(new Random().NextDouble() * (PitchMax - PitchMin) + PitchMin) : 0;
         sound.Play();
+    }
+
+    public static void UnloadAssets()
+    {
+        foreach (var tex in LoadedTextures.Values) tex.Dispose();
+        foreach (var shader in Shaders.Values) shader.Dispose();
+        foreach (var sound in LoadedSoundsList.Values) sound.Dispose();
+        LoadedTextures.Clear();
+        Shaders.Clear();
+        LoadedSoundsList.Clear();
+        LoadedImGuiTextures.Clear();
     }
 }
