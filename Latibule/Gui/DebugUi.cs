@@ -68,7 +68,7 @@ public class DebugUi
         string[] debugTexts =
         [
             $"",
-            $"FPS: {Math.Round(1 / (float)gameTime.ElapsedGameTime.TotalSeconds, 1)} / Engine.TargetFps",
+            $"FPS: {Math.Round(1 / (float)gameTime.ElapsedGameTime.TotalSeconds, 1)} / {GameOptions.TargetFPS}",
             $"X: {LatibuleGame.Player.Position.X}",
             $"Y: {LatibuleGame.Player.Position.Y}",
             $"Z: {LatibuleGame.Player.Position.Z}",
