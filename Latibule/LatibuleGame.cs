@@ -2,9 +2,11 @@
 using Latibule.Core;
 using Latibule.Core.Data;
 using Latibule.Core.Rendering;
+using Latibule.Core.Rendering.Objects;
 using Latibule.Entities;
 using Latibule.Gui;
 using Latibule.Models;
+using Latibule.Services;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -15,16 +17,15 @@ namespace Latibule;
 
 public class LatibuleGame : Game
 {
+    public static GraphicsDeviceManager GDM = null!;
     public static ImGuiRenderer ImGuiRenderer = null!;
 
-
     public static DebugUi DebugUi;
+    public static DebugUi3D DebugUi3d;
     public static Player Player { get; private set; }
     public static FontSystem Fonts { get; private set; }
 
     public static World GameWorld { get; private set; }
-
-    private Point _screenCenter;
 
     [STAThread]
     public static void Main(string[] args)
@@ -35,43 +36,43 @@ public class LatibuleGame : Game
 
     private LatibuleGame()
     {
-        new GraphicsDeviceManager(this)
+        GDM = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
             PreferredBackBufferHeight = 720,
             PreferredDepthStencilFormat = DepthFormat.Depth24Stencil8,
-            IsFullScreen = false,
-            SynchronizeWithVerticalRetrace = true
+            IsFullScreen = GameOptions.FullScreen,
+            SynchronizeWithVerticalRetrace = false,
+            PreferMultiSampling = true,
         };
 
         Content.RootDirectory = Metadata.ASSETS_ROOT_DIRECTORY;
+
+        Window.AllowUserResizing = true;
+        IsMouseVisible = false;
+        Mouse.IsRelativeMouseModeEXT = true;
+
+        IsFixedTimeStep = true;
+        TargetElapsedTime = TimeSpan.FromSeconds(1.0 / GameOptions.TargetFPS);
     }
 
     protected override void Initialize()
     {
         LogInfo($"Initializing {Metadata.GAME_NAME} ver{Metadata.GAME_VERSION}");
+        GameStateManager.Initialize(this);
+        DevConsoleService.Initialize();
         ImGuiRenderer = new ImGuiRenderer(this);
         Fonts = new FontSystem();
 
-        // Store the center of the screen for mouse handling
-        _screenCenter = new Point(GraphicsDevice.Viewport.Width / 2, GraphicsDevice.Viewport.Height / 2);
-
-        // Set the window name
-        // Window.Title = GetWindowTitle();
-        Window.AllowUserResizing = true;
-        Window.ClientSizeChanged += (sender, args) => { _screenCenter = new Point(GraphicsDevice.Viewport.Width / 2, GraphicsDevice.Viewport.Height / 2); };
-
-        GameStates.Initialize();
-
         DebugUi = new DebugUi(GraphicsDevice);
+        DebugUi3d = new DebugUi3D(GraphicsDevice);
         // TESTING WORLD
         GameWorld = new World()
         {
             Objects =
             [
-                new Plane(this) { Position = new Vector3(0, 0, 0), Scale =  new Vector3(10, 1, 10), UVScale = new Vector2(5, 5)},
-                new Plane(this) { Position = new Vector3(20, 0, 10) },
-                new Plane(this) { Position = new Vector3(10, -5, 5) }
+                new Plane(this) { Position = new Vector3(0, 0, 0), Scale = new Vector3(10, 0, 10), UVScale = new Vector2(5, 5) },
+                new Corridor(this) { Position = new Vector3(0, 2, 0) }
             ]
         };
 
@@ -80,11 +81,9 @@ public class LatibuleGame : Game
 
     protected override void LoadContent()
     {
-        Console.WriteLine($"Loading {Metadata.GAME_NAME} v{Metadata.GAME_VERSION}");
         ImGuiRenderer.RebuildFontAtlas();
         AssetManager.LoadAssets(Content, GraphicsDevice);
-        AssetManager.PlaySound("tada", volume: 0.25f, randomPitch: false);
-
+        AssetManager.PlaySound(SoundAsset.tada, volume: 0.25f, randomPitch: false);
 
         base.LoadContent();
     }
@@ -92,6 +91,8 @@ public class LatibuleGame : Game
     protected override void UnloadContent()
     {
         // Clean up after yourself!
+        AssetManager.UnloadAssets();
+
         base.UnloadContent();
     }
 
@@ -99,37 +100,30 @@ public class LatibuleGame : Game
     {
         Player = new Player(GraphicsDevice, new Vector3(0, 0, 0));
         GameWorld.Initialize();
+
+        base.BeginRun();
     }
 
     protected override void Update(GameTime gameTime)
     {
-        Player.Update(gameTime);
-        GameWorld.Update(gameTime);
-
-        var ks = Keyboard.GetState();
-        if (ks.IsKeyDown(Keys.Escape) && GameStates.PreviousKState.IsKeyUp(Keys.Escape)) Exit();
-
-        if (ks.IsKeyDown(Keys.F3) && !GameStates.PreviousKState.IsKeyDown(Keys.F3) && !ks.IsKeyDown(Keys.B))
-            DebugUi.ShowDebug = !DebugUi.ShowDebug;
-
-        if (GameStates.MouseLocked)
+        if (!IsActive)
         {
-            Mouse.SetPosition(_screenCenter.X, _screenCenter.Y);
-            // Update the player's previous mouse state to match the centered position
-            GameStates.PreviousMState = new MouseState(
-                _screenCenter.X,
-                _screenCenter.Y,
-                0,
-                GameStates.PreviousMState.LeftButton,
-                GameStates.PreviousMState.MiddleButton,
-                GameStates.PreviousMState.RightButton,
-                GameStates.PreviousMState.XButton1,
-                GameStates.PreviousMState.XButton2
-            );
+            // unlock the mouse if the game is not active
+            if (GameStates.MouseLookLocked)
+            {
+                GameStates.MouseLookLocked = false;
+                IsMouseVisible = true;
+            }
+
+            return;
         }
 
+        if (GameStates.CurrentGui is DevConsole) return;
 
-        GameStates.PreviousKState = ks;
+        Player.Update(gameTime);
+        GameWorld.Update(gameTime);
+        GameStateManager.Update(this, gameTime);
+
         base.Update(gameTime);
     }
 
@@ -141,6 +135,9 @@ public class LatibuleGame : Game
         GameWorld.Draw(gameTime);
 
         DebugUi.Draw(gameTime);
+        DebugUi3d.Draw(Player);
+
+        GameStates.CurrentGui?.Draw(gameTime);
         base.Draw(gameTime);
     }
 }
