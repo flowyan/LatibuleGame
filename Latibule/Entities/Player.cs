@@ -1,6 +1,7 @@
-﻿using Latibule.Core.Data;
+using Latibule.Core.Data;
 using Latibule.Core.Gameplay;
 using Latibule.Models;
+using Latibule.Utilities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -26,6 +27,7 @@ public class Player
 
     private Vector3 CameraPosition => new(RawPosition.X, EyePosition.Y, RawPosition.Z);
     public Camera Camera { get; private set; }
+    public Physics Physics { get; private set; }
     public BoundingBox Box { get; private set; }
 
     // Add player dimensions
@@ -52,14 +54,12 @@ public class Player
     public Vector3 Velocity = Vector3.Zero;
     private float _velocityLimit = 0.5f;
     private bool _isJumping;
-    private float _jumpForce = 0.15f; // Jump force
+    private float _jumpForce = 15f; // Jump force
 
     // Add a cooldown timer for jump
     private float _jumpCooldown = 0f;
     private float _jumpCooldownTime = 0.3f; // Time in seconds between allowed jumps
 
-    private MouseState _currentMouseState;
-    private MouseState _previousMouseState;
     private KeyboardState _currentKeyboardState;
     private KeyboardState _previousKeyboardState;
 
@@ -67,15 +67,16 @@ public class Player
         RawPosition + new Vector3(0, IsSneaking ? Camera.EyeHeightOffsetSneak : Camera.EyeHeightOffset, 0);
 
     public bool CollisionEnabled { get; set; } = true;
-    public bool IsNoclip { get; private set; } = true;
+    public bool IsNoclip { get; private set; }
     public bool RestrictedAction { get; set; } = false;
     public bool LookEnabled { get; set; } = true;
     public bool CanMove { get; set; } = true;
 
     public Player(GraphicsDevice graphicsDevice, Vector3 startingCoords)
     {
-        var direction = new Vector3(0, 0, 0);
+        var direction = Vector3.Forward;
         Camera = new Camera(graphicsDevice, CameraPosition, direction, EyePosition);
+        Physics = new Physics(this);
 
         // Initialize position and orientation
         StartingCoords = startingCoords;
@@ -85,7 +86,6 @@ public class Player
         // Initialize the player's bounding box
         UpdateBoundingBox();
 
-        _currentMouseState = Mouse.GetState();
         _currentKeyboardState = Keyboard.GetState();
     }
 
@@ -120,10 +120,7 @@ public class Player
     public void Update(GameTime gameTime)
     {
         _currentKeyboardState = Keyboard.GetState();
-        _previousMouseState = _currentMouseState;
-        _currentMouseState = Mouse.GetState();
 
-        var ms = _currentMouseState;
         var ks = _currentKeyboardState;
 
         // if (ks.IsKeyDown(Keys.E) && !Engine.PreviousKState.IsKeyDown(Keys.E)) Engine.SetUiOnScreen(new InventoryGui());
@@ -142,8 +139,9 @@ public class Player
             Velocity = Vector3.Normalize(Velocity) * _velocityLimit;
         }
 
-        var pks = _previousKeyboardState;
-        var pms = _previousMouseState;
+        var pks = GameStates.PreviousKState;
+        var pms = GameStates.PreviousMState;
+        var ms = GameStates.MState;
 
         if (ms.LeftButton == ButtonState.Pressed && Controls.Cooldown(200)) LeftClickAction();
         if (pms.LeftButton == ButtonState.Pressed && ms.LeftButton == ButtonState.Released) Controls.ResetCooldown();
@@ -188,7 +186,6 @@ public class Player
             UpdateBoundingBox();
             UpdateCamera(gameTime);
             _previousKeyboardState = _currentKeyboardState;
-            _previousMouseState = _currentMouseState;
             return;
         }
 
@@ -213,7 +210,6 @@ public class Player
         UpdateBoundingBox();
 
         _previousKeyboardState = _currentKeyboardState;
-        _previousMouseState = _currentMouseState;
     }
 
     private void PushBackIfAtWorldEdge()
@@ -333,7 +329,7 @@ public class Player
         // Handle jumping - allow jumping when grounded and cooldown is complete
         if (ks.IsKeyDown(Keys.Space) && IsGrounded && _jumpCooldown <= 0)
         {
-            Velocity.Y = _jumpForce;
+            Velocity.Y = _jumpForce * deltaTime;
             //IsGrounded = false;
             _isJumping = true;
             _jumpCooldown = _jumpCooldownTime; // Set cooldown to prevent too rapid jumping
@@ -375,7 +371,7 @@ public class Player
 
             // Update bounding box and check for collisions
             UpdateBoundingBox();
-            // Physics.ResolveCollisions();
+            Physics.ResolveCollisions();
         }
 
         // Then, try to move vertically (Y)
@@ -383,16 +379,52 @@ public class Player
 
         // Update bounding box and check for collisions
         UpdateBoundingBox();
-        // Physics.ResolveCollisions();
+        Physics.ResolveCollisions();
+
+        // Check for grounded state by casting a ray slightly below the player
+        CheckGrounded();
+    }
+
+    private void CheckGrounded()
+    {
+        const float groundCheckDistance = 0.15f;
+
+        var allCorners = Box.GetCorners();
+        var bottomCorners = new Vector3[4];
+        bottomCorners[0] = allCorners[2];
+        bottomCorners[1] = allCorners[3];
+        bottomCorners[2] = allCorners[6];
+        bottomCorners[3] = allCorners[7];
+
+        var boxes = LatibuleGame.GameWorld.GetBoundingBoxes();
+
+        foreach (var box in boxes)
+        {
+            foreach (var corner in bottomCorners)
+            {
+                var rayStart = corner + new Vector3(0, 0.05f, 0);
+                var rayEnd = rayStart - new Vector3(0, groundCheckDistance, 0);
+
+                if (!AabbHelper.RayIntersectsAabb(rayStart, rayEnd, box, out var hitPoint, out _)) continue;
+                IsGrounded = true;
+
+                var distanceToGround = rayStart.Y - hitPoint.Y;
+                if (!(distanceToGround < 0.0001f)) return;
+                RawPosition.Y = hitPoint.Y + 0.0001f;
+                UpdateBoundingBox();
+
+                return;
+            }
+        }
     }
 
     public void LeftClickAction()
     {
-        AssetManager.PlaySound("missing", volume: 0.5f);
+        AssetManager.PlaySound(SoundAsset.missing, volume: 0.5f);
     }
 
     public void RightClickAction()
     {
-        AssetManager.PlaySound("missing", volume: 0.5f);
+        AssetManager.PlaySound(SoundAsset.missing, volume: 0.5f);
     }
 }
