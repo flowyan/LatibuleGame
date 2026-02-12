@@ -1,5 +1,6 @@
 ﻿using Latibule.Core.Data;
 using Latibule.Models;
+using Latibule.Utilities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -24,14 +25,22 @@ public class Plane(Game game) : GameObject(game)
         var _graphicsDevice = _game.GraphicsDevice;
         var planeVertices = new VertexPositionTexture[4];
 
-        planeVertices[0] = new VertexPositionTexture(
-            new Vector3(-1, 0, -1), new Vector2(0, UVScale.Y)); // bottom-left
-        planeVertices[1] = new VertexPositionTexture(
-            new Vector3(1, 0, -1), new Vector2(UVScale.X, UVScale.Y)); // bottom-right
-        planeVertices[2] = new VertexPositionTexture(
-            new Vector3(-1, 0, 1), new Vector2(0, 0)); // top-left
-        planeVertices[3] = new VertexPositionTexture(
-            new Vector3(1, 0, 1), new Vector2(UVScale.X, 0)); // top-right
+        var bottomLeft = new Vector3(-1, 0, -1);
+        var bottomRight = new Vector3(1, 0, -1);
+        var topLeft = new Vector3(-1, 0, 1);
+        var topRight = new Vector3(1, 0, 1);
+
+        planeVertices[0] = new VertexPositionTexture(bottomLeft, new Vector2(0, UVScale.Y)); // bottom-left
+        planeVertices[1] = new VertexPositionTexture(bottomRight, new Vector2(UVScale.X, UVScale.Y)); // bottom-right
+        planeVertices[2] = new VertexPositionTexture(topLeft, new Vector2(0, 0)); // top-left
+        planeVertices[3] = new VertexPositionTexture(topRight, new Vector2(UVScale.X, 0)); // top-right
+
+        BoundingBox = AabbHelper.CreateFromCenterRotationScale(
+            Position,
+            new Vector3(Scale.X, 0, Scale.Z),
+            Rotation
+        );
+
 
         var planeIndices = new short[]
         {
@@ -58,8 +67,10 @@ public class Plane(Game game) : GameObject(game)
         _effect = new BasicEffect(_graphicsDevice)
         {
             TextureEnabled = true,
-            Texture = AssetManager.LoadedTextures["material/stone"],
+            Texture = AssetManager.GetTexture(TextureAsset.material_stone),
         };
+
+        base.Initialize();
     }
 
     public override void Draw(GameTime gameTime)
@@ -75,7 +86,13 @@ public class Plane(Game game) : GameObject(game)
         graphicsDevice.RasterizerState = _rasterizerState;
 
         var camera = LatibuleGame.Player.Camera;
-        _effect.World = Matrix.CreateScale(Scale) * Matrix.CreateTranslation(Position);
+        _effect.World =
+            Matrix.CreateScale(Scale) *
+            Matrix.CreateRotationX(MathHelper.ToRadians(Rotation.X)) *
+            Matrix.CreateRotationY(MathHelper.ToRadians(Rotation.Y)) *
+            Matrix.CreateRotationZ(MathHelper.ToRadians(Rotation.Z)) *
+            Matrix.CreateTranslation(Position) // Must be last, order matters in matrices
+            ;
         _effect.View = camera.View;
         _effect.Projection = camera.Projection;
 
@@ -98,5 +115,7 @@ public class Plane(Game game) : GameObject(game)
         graphicsDevice.BlendState = oldBlendState;
         graphicsDevice.DepthStencilState = oldDepthStencilState;
         graphicsDevice.RasterizerState = oldRasterizerState;
+
+        base.Draw(gameTime);
     }
 }
