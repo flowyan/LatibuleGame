@@ -35,8 +35,6 @@ public class Camera
     private float _yaw;
     private float _pitch;
 
-    private MouseState _previousMouseState;
-
     public Camera(GraphicsDevice graphics, Vector3 position, Vector3 target, Vector3 eyePosition)
     {
         _graphicsDevice = graphics;
@@ -56,15 +54,13 @@ public class Camera
         UpdateViewMatrix();
         UpdateProjectionMatrix();
 
-        _previousMouseState = Mouse.GetState();
         Frustum = new BoundingFrustum(View * Projection);
     }
 
 
     public void Update(GameTime gameTime)
     {
-        var currentMouseState = Mouse.GetState();
-        HandleMouseLook(currentMouseState);
+        HandleMouseLook();
 
         HorizontalDirection.X = Direction.X;
         HorizontalDirection.Z = Direction.Z;
@@ -76,8 +72,6 @@ public class Camera
 
 
         _target = Direction + Position;
-
-        _previousMouseState = currentMouseState;
 
         View = Matrix.CreateLookAt(Position, _target, Vector3.Up);
 
@@ -99,13 +93,12 @@ public class Camera
             FarPlaneDistance);
     }
 
-    private void HandleMouseLook(MouseState ms)
+    private void HandleMouseLook()
     {
-        if (GameStates.MouseLocked == false) return;
+        if (GameStates.MouseLookLocked) return;
 
-        // Calculate the delta even if the mouse is centered each frame
-        var deltaX = ms.X - GameStates.PreviousMState.X;
-        var deltaY = ms.Y - GameStates.PreviousMState.Y;
+        var deltaX = GameStates.PreviousMState.X;
+        var deltaY = GameStates.PreviousMState.Y;
 
         // Only process mouse movement if there actually was movement
         if (deltaX == 0 && deltaY == 0) return;
