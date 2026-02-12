@@ -1,11 +1,158 @@
-﻿using Latibule.Models;
+﻿using ImGuiNET;
+using Latibule.Models;
+using Latibule.Services;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
+using ICommand = Latibule.Models.ICommand;
+using Vector2 = System.Numerics.Vector2;
+using Vector4 = System.Numerics.Vector4;
 
 namespace Latibule.Core;
 
-public static class DevConsole
+public class DevConsole : IGuiScreen
 {
-    public static void Log(ConsoleMessage consoleMessage)
+    private static List<ConsoleMessage> _messages = [];
+    private static List<string> _commandHistory = [];
+    public static List<ICommand?>? ConsoleCommands = [];
+
+    private static string _command = "";
+
+    public void Draw(GameTime gameTime)
     {
-        // TODO: Implement dev console
+        var ks = GameStates.KState;
+        var pks = GameStates.PreviousKState;
+
+        if (GameStates.CurrentGui is not DevConsole)
+        {
+            ImGui.SetWindowFocus();
+            _command = _command.Replace("`", "");
+            return;
+        }
+
+        if (ks.IsKeyDown(Keys.Escape) && !pks.IsKeyDown(Keys.Escape)) GameStateManager.SetUiOnScreen();
+
+        var deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        if (deltaTime <= 0) return;
+
+        LatibuleGame.ImGuiRenderer.BeforeLayout(gameTime);
+        ImGui.Begin("Dev Console",
+            ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoMove);
+
+        var x = ImGui.GetIO().DisplaySize.X / 2 - 500;
+
+        ImGui.SetWindowPos(new Vector2(x, 50), ImGuiCond.Always);
+        ImGui.SetWindowSize(new Vector2(1000, GameStates.Game.Window.ClientBounds.Y - 150), ImGuiCond.Always);
+        ImGui.SetWindowFocus();
+
+        ImGui.BeginChild("##messages", new Vector2(0, -ImGui.GetFrameHeightWithSpacing()));
+        var id = 0;
+        foreach (var message in _messages)
+        {
+            ImGui.PushID(id++);
+            var textSize = ImGui.CalcTextSize(message.Content);
+            textSize.X = ImGui.GetWindowWidth();
+            textSize.Y += ImGui.GetStyle().FramePadding.Y * 1.25f;
+            var text = message.Content;
+
+            ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0, 0));
+            ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(0, 0, 0, 0));
+            ImGui.PushStyleColor(ImGuiCol.Text, message.Color);
+
+            ImGui.InputTextMultiline(
+                "",
+                ref text,
+                (uint)text.Length + 1,
+                textSize,
+                ImGuiInputTextFlags.ReadOnly | ImGuiInputTextFlags.NoHorizontalScroll
+            );
+
+            // if (ImGui.IsItemHovered())
+            // {
+            //     ImGui.SetTooltip("fuck you lookin at");
+            // }
+
+            ImGui.PopStyleColor();
+            ImGui.PopStyleColor();
+            ImGui.PopStyleVar();
+            ImGui.PopID();
+        }
+
+        // Autoscroll
+        if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY()) ImGui.SetScrollHereY(1);
+
+        ImGui.EndChild();
+        if (ImGui.IsWindowAppearing()) ImGui.SetKeyboardFocusHere();
+        if (ImGui.IsKeyPressed(ImGuiKey.Enter)) ImGui.SetKeyboardFocusHere();
+        if (ImGui.IsKeyPressed(ImGuiKey.GraveAccent)) ImGui.SetKeyboardFocusHere();
+
+        ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(0, 0, 0, 1));
+        // max width
+        ImGui.SetNextItemWidth(-1);
+        var input = ImGui.InputTextWithHint("##input", "Enter command here", ref _command, 256,
+            ImGuiInputTextFlags.EnterReturnsTrue);
+        if (input && _command.Length > 0) ExecuteCommand(_command);
+        ImGui.PopStyleColor();
+
+        ImGui.End();
+        LatibuleGame.ImGuiRenderer.AfterLayout();
+    }
+
+    public static void Log(ConsoleMessage message) => _messages.Add(message);
+
+    public static void InfoLog(string message) => Log(new ConsoleMessage(message, ConsoleMessageType.Info));
+
+    public static void ErrorLog(string message) =>
+        Log(new ConsoleMessage($"[ERROR] {message}", ConsoleMessageType.Error));
+
+    public static void WarnLog(string message) =>
+        Log(new ConsoleMessage($"[WARN] {message}", ConsoleMessageType.Warning));
+
+    public static void CommandLog(string message, Vector4? color = null) =>
+        Log(new ConsoleMessage(message, ConsoleMessageType.CommandOutput, color));
+
+    private static void ExecuteCommand(string command)
+    {
+        try
+        {
+            command = command.ToLower();
+            Logger.LogInfo($"Executing command: {command}", false);
+            InfoLog($"] {command}");
+            _commandHistory.Add(command);
+
+            // if (!PetrichorEngine.HasDeveloperKey && command.Split(" ")[0] != "sv_cheats")
+            // {
+            //     Logger.LogError($"Can't use cheat command '{command.Split(" ")[0]}', unless the game has sv_cheats set to 1.");
+            //     return;
+            // }
+
+            // Support for multiple commands separated by semicolons
+            if (command.Contains(';'))
+            {
+                var commands = command.Split(";");
+                foreach (var cmd in commands)
+                {
+                    var args = cmd.Split(" ");
+                    var consoleCommand = ConsoleCommands?.Find(c => c.Name == args[0] || c.Aliases.Contains(args[0]));
+                    if (consoleCommand != null) consoleCommand.Execute(args);
+                    else Logger.LogError($"Command '{args[0]}' not found");
+                }
+            }
+            else
+            {
+                var args = command.Split(" ");
+                var consoleCommand = ConsoleCommands?.Find(c => c.Name == args[0] || c.Aliases.Contains(args[0]));
+                if (consoleCommand != null) consoleCommand.Execute(args);
+                else Logger.LogError($"Command '{args[0]}' not found");
+            }
+
+            // Clear the command input after execution
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            Logger.LogError($"An error occurred while executing command: {e.Message}");
+        }
+
+        _command = "";
     }
 }
