@@ -2,6 +2,10 @@
 
 public static class GameOptions
 {
+    public const int TargetFPS = 180;
+
+    public const bool FullScreen = false;
+
     // Graphics
     public const int FogStartDistance = 0;
     public const int FogEndDistance = 128;
