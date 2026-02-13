@@ -15,6 +15,9 @@
             <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
         </ProjectReference>
         <ProjectReference Include="..\FontStashSharp\src\XNA\FontStashSharp.FNA.Core.csproj" />
+        <ProjectReference Include="..\Nez\Nez.ImGui\Nez.FNA.Core.ImGui.csproj" />
+        <ProjectReference Include="..\Nez\Nez.Persistence\Nez.FNA.Core.Persistence.csproj" />
+        <ProjectReference Include="..\Nez\Nez.Portable\Nez.FNA.Core.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -37,10 +40,6 @@
         <Folder Include="Assets\shader\" />
         <Folder Include="lib\"/>
         <Folder Include="obj\"/>
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
     </ItemGroup>
 
 </Project>
