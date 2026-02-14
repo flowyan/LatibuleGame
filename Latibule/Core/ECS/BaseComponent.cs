@@ -3,10 +3,8 @@ using OpenTK.Windowing.Desktop;
 
 namespace Latibule.Core.ECS;
 
-public abstract class BaseComponent(GameWindow gameWindow)
+public abstract class BaseComponent()
 {
-    public GameWindow GameWindow { get; } = gameWindow;
-
     public virtual void OnLoad()
     {
     }
