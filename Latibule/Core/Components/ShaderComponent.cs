@@ -4,13 +4,16 @@ using OpenTK.Windowing.Desktop;
 
 namespace Latibule.Core.Components;
 
-public sealed class ShaderComponent(GameWindow gameWindow, string vertPath, string fragPath) : BaseComponent(gameWindow)
+public sealed class ShaderComponent(Shader shader) : BaseComponent()
 {
-    public Shader Shader { get; } = new(vertPath, fragPath);
+    public Shader Shader { get; } = shader;
+
+    public Texture? Texture { get; set; }
 
     public override void Dispose()
     {
         Shader.Dispose();
+        Texture?.Dispose();
         base.Dispose();
     }
 }
