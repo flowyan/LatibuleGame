@@ -59,7 +59,7 @@ public class Player : GameObject
         RawPosition + new Vector3(0, IsSneaking ? Camera.EyeHeightOffsetSneak : Camera.EyeHeightOffset, 0);
 
     public bool CollisionEnabled { get; set; } = true;
-    public bool IsNoclip { get; private set; }
+    public bool IsNoclip { get; internal set; }
     public bool RestrictedAction { get; set; } = false;
     public bool LookEnabled { get; set; } = true;
     public bool CanMove { get; set; } = true;
