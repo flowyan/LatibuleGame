@@ -11,13 +11,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\FNA\FNA.Core.csproj">
-            <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-        </ProjectReference>
-        <ProjectReference Include="..\FontStashSharp\src\XNA\FontStashSharp.FNA.Core.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
         <None Include="lib\fnalibs\x64\**\*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
