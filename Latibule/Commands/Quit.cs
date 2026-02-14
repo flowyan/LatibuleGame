@@ -1,0 +1,16 @@
+﻿using Latibule.Models;
+
+namespace Latibule.Commands;
+
+public class Quit : ICommand
+{
+    public string Name { get; } = "quit";
+    public List<string> Aliases { get; } = ["exit", "disconnect", "dc"];
+    public string Usage { get; } = "quit";
+
+    public Task Execute(string[] args)
+    {
+        GameStates.Game.Exit();
+        return Task.CompletedTask;
+    }
+}
