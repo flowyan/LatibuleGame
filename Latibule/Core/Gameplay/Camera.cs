@@ -1,12 +1,11 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Latibule.Utilities;
+using OpenTK.Mathematics;
+using OpenTK.Windowing.Common;
 
 namespace Latibule.Core.Gameplay;
 
 public class Camera
 {
-    private GraphicsDevice _graphicsDevice;
-
     // Constants
     private const float Fov = 70f; // Field of view in degrees
     private const float NearPlaneDistance = 0.001f; // Near plane distance for projection matrix
@@ -15,8 +14,8 @@ public class Camera
     // Eye height offset for positioning the camera at eye level instead of feet
     public const float EyeHeightOffset = 1.6f;
     public const float EyeHeightOffsetSneak = 1.5f; // Height when sneaking
-    public Matrix View { get; set; }
-    public Matrix Projection { get; private set; }
+    public Matrix4 View { get; set; }
+    public Matrix4 Projection { get; private set; }
     public Vector3 Direction { get; set; }
     public Vector3 EyePosition { get; private set; }
 
@@ -27,16 +26,15 @@ public class Camera
 
     public Vector3 HorizontalDirection;
 
-    public BoundingFrustum Frustum { get; set; }
-
     private Vector3 _target;
+    private float _aspectRatio;
 
     private float _yaw;
     private float _pitch;
 
-    public Camera(GraphicsDevice graphics, Vector3 position, Vector3 target, Vector3 eyePosition)
+    public Camera(float aspectRatio, Vector3 position, Vector3 target, Vector3 eyePosition)
     {
-        _graphicsDevice = graphics;
+        _aspectRatio = aspectRatio;
         _target = target;
 
         Position = position;
@@ -52,42 +50,38 @@ public class Camera
 
         UpdateViewMatrix();
         UpdateProjectionMatrix();
-
-        Frustum = new BoundingFrustum(View * Projection);
     }
 
 
-    public void Update(GameTime gameTime)
+    public void Update(FrameEventArgs args)
     {
         HandleMouseLook();
 
         HorizontalDirection.X = Direction.X;
         HorizontalDirection.Z = Direction.Z;
 
-        if (HorizontalDirection.LengthSquared() > 0.000001f)
-            HorizontalDirection.Normalize();
-        else
-            HorizontalDirection = Vector3.Forward; // or keep previous value
+        if (HorizontalDirection.LengthSquared > 0.000001f) HorizontalDirection = Vector3.Normalize(HorizontalDirection);
+        else HorizontalDirection = Vector3Direction.Forward; // or keep previous value
 
 
         _target = Direction + Position;
 
-        View = Matrix.CreateLookAt(Position, _target, Vector3.Up);
+        View = Matrix4.LookAt(Position, _target, Vector3Direction.Up);
 
-        Frustum.Matrix = View * Projection;
+        // Frustum.Matrix = View * Projection;
     }
 
     private void UpdateViewMatrix()
     {
         // Use eye position (at eye level) instead of feet position for the camera
-        View = Matrix.CreateLookAt(EyePosition, EyePosition + Direction, Vector3.Up);
+        View = Matrix4.LookAt(EyePosition, EyePosition + Direction, Vector3Direction.Up);
     }
 
     private void UpdateProjectionMatrix()
     {
-        Projection = Matrix.CreatePerspectiveFieldOfView(
-            MathHelper.ToRadians(Fov),
-            _graphicsDevice.Viewport.AspectRatio,
+        Projection = Matrix4.CreatePerspectiveFieldOfView(
+            MathHelper.DegreesToRadians(Fov),
+            _aspectRatio,
             NearPlaneDistance,
             FarPlaneDistance);
     }
@@ -96,8 +90,8 @@ public class Camera
     {
         if (GameStates.MouseLookLocked) return;
 
-        var deltaX = GameStates.PreviousMState.X;
-        var deltaY = GameStates.PreviousMState.Y;
+        var deltaX = GameStates.MState.Delta.X;
+        var deltaY = GameStates.MState.Delta.Y;
 
         // Only process mouse movement if there actually was movement
         if (deltaX == 0 && deltaY == 0) return;

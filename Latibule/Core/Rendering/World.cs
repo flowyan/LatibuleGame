@@ -1,37 +1,39 @@
 ﻿using Latibule.Core.ECS;
-using Microsoft.Xna.Framework;
+using Latibule.Core.Physics;
+using OpenTK.Windowing.Common;
 
 namespace Latibule.Core.Rendering;
 
 public class World
 {
-    public List<GameObject> Objects { get; set; } = [];
+    public List<GameObject> Objects { get; init; } = [];
+
     private BoundingBox[] _boundingBoxes = Array.Empty<BoundingBox>();
     private readonly Queue<GameObject> _pendingAdds = [];
     private readonly Queue<GameObject> _pendingRemoves = [];
     private bool _isIterating = false;
 
-    public void Initialize()
+    public void OnLoad()
     {
         _isIterating = true;
-        foreach (var obj in Objects) obj.Initialize();
+        foreach (var obj in Objects) obj.OnLoad();
         _isIterating = false;
         ApplyDeferredOperations();
     }
 
-    public void Update(GameTime gameTime)
+    public void OnUpdateFrame(FrameEventArgs args)
     {
         if (GameStates.CurrentGui is DevConsole) return;
         _isIterating = true;
-        foreach (var obj in Objects) obj.Update(gameTime);
+        foreach (var obj in Objects) obj.OnUpdateFrame(args);
         _isIterating = false;
         ApplyDeferredOperations();
     }
 
-    public void Draw(GameTime gameTime)
+    public void OnRenderFrame(FrameEventArgs args)
     {
         _isIterating = true;
-        foreach (var obj in Objects) obj.Draw(gameTime);
+        foreach (var obj in Objects) obj.OnRenderFrame(args);
         _isIterating = false;
         ApplyDeferredOperations();
     }
@@ -91,5 +93,18 @@ public class World
             _boundingBoxes[i] = Objects[i].BoundingBox;
 
         return _boundingBoxes;
+    }
+
+    /// <summary>
+    /// Returns bounding boxes only for objects that have collision enabled.
+    /// Used for player AABB collision detection.
+    /// </summary>
+    public BoundingBox[] GetCollidableBoxes()
+    {
+        var collidables = Objects.Where(o => o.HasCollision).ToList();
+        var result = new BoundingBox[collidables.Count];
+        for (int i = 0; i < collidables.Count; i++)
+            result[i] = collidables[i].BoundingBox;
+        return result;
     }
 }

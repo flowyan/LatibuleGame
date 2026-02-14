@@ -1,11 +1,12 @@
 using Latibule.Core;
-using Latibule.Core.Data;
 using Latibule.Core.Gameplay;
+using Latibule.Core.Physics;
 using Latibule.Models;
 using Latibule.Utilities;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
+using OpenTK.Mathematics;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
 namespace Latibule.Entities;
 
@@ -28,8 +29,8 @@ public class Player
 
     private Vector3 CameraPosition => new(RawPosition.X, EyePosition.Y, RawPosition.Z);
     public Camera Camera { get; private set; }
-    public Physics Physics { get; private set; }
-    public BoundingBox Box { get; private set; }
+    public PlayerPhysics Physics { get; private set; }
+    public BoundingBox BoundingBox { get; private set; }
 
     // Add player dimensions
     private const float Width = 0.6f;
@@ -46,48 +47,46 @@ public class Player
     private float _inertia = 0.8f;
     private float _airMultiplier = 0.8f;
     public Vector3 CurrentMovement { get; private set; } = Vector3.Zero;
-    public bool IsGrounded { get; private set; }
+    public bool IsGrounded { get; set; }
     public static bool IsSneaking;
     private bool _isMovementPressed;
 
     // Gravity and jump properties
-    private float _gravity = 0.5f; // Gravity strength
+    private float _gravity = 0.5f;
     public Vector3 Velocity = Vector3.Zero;
     private float _velocityLimit = 0.5f;
-    private bool _isJumping;
-    private float _jumpForce = 15f; // Jump force
+    private float _jumpForce = 15f;
 
     // Add a cooldown timer for jump
-    private float _jumpCooldown = 0f;
-    private float _jumpCooldownTime = 0.3f; // Time in seconds between allowed jumps
-
-    private KeyboardState _currentKeyboardState;
-    private KeyboardState _previousKeyboardState;
+    private float _jumpCooldown;
+    private float _jumpCooldownTime = 0.3f;
 
     public Vector3 EyePosition =>
         RawPosition + new Vector3(0, IsSneaking ? Camera.EyeHeightOffsetSneak : Camera.EyeHeightOffset, 0);
 
     public bool CollisionEnabled { get; set; } = true;
-    public bool IsNoclip { get; private set; }
+    public bool IsNoclip { get; private set; } = true;
     public bool RestrictedAction { get; set; } = false;
     public bool LookEnabled { get; set; } = true;
     public bool CanMove { get; set; } = true;
 
-    public Player(GraphicsDevice graphicsDevice, Vector3 startingCoords)
+    public Player(GameWindow gameWindow, Vector3 startingCoords)
     {
-        var direction = Vector3.Forward;
-        Camera = new Camera(graphicsDevice, CameraPosition, direction, EyePosition);
-        Physics = new Physics(this);
+        var direction = Vector3Direction.Forward;
+        Camera = new Camera(gameWindow.Size.X / (float)gameWindow.Size.Y, CameraPosition, direction, EyePosition);
+        Physics = new PlayerPhysics(this);
 
         // Initialize position and orientation
         StartingCoords = startingCoords;
         Position = startingCoords;
-        _up = Vector3.Up;
+        _up = Vector3Direction.Up;
 
         // Initialize the player's bounding box
         UpdateBoundingBox();
 
-        _currentKeyboardState = Keyboard.GetState();
+        // Bind inputs
+        Input.BindKeyPressed(Keys.R, () => Position = StartingCoords);
+        Input.BindKeyPressed(Keys.V, () => IsNoclip = !IsNoclip);
     }
 
     public void UpdateBoundingBox()
@@ -108,67 +107,53 @@ public class Player
             Position.Z + (Depth / 2f)
         );
 
-        Box = new BoundingBox(min, max);
+        BoundingBox = new BoundingBox(min, max);
     }
 
-    private void UpdateCamera(GameTime gameTime)
+    private void UpdateCamera(FrameEventArgs args)
     {
         if (!LookEnabled) return;
         Camera.Position = CameraPosition;
-        Camera.Update(gameTime);
+        Camera.Update(args);
     }
 
-    public void Update(GameTime gameTime)
+    public void Update(FrameEventArgs args)
     {
         if (GameStates.CurrentGui is DevConsole) return;
-
-        _currentKeyboardState = Keyboard.GetState();
-
-        var ks = _currentKeyboardState;
 
         // if (ks.IsKeyDown(Keys.E) && !Engine.PreviousKState.IsKeyDown(Keys.E)) Engine.SetUiOnScreen(new InventoryGui());
 
         // If a GUI is currently open, skip player update
         // if (Engine.CurrentGui is not null) return;
 
-        var deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        var deltaTime = (float)args.Time;
 
         // Update the hit result for the current frame
         PushBackIfAtWorldEdge();
 
-        if (Velocity.Length() >= _velocityLimit || Velocity.LengthSquared() <= -_velocityLimit)
+        if (Velocity.Length >= _velocityLimit || Velocity.LengthSquared <= -_velocityLimit)
         {
             // Limit the velocity to prevent excessive speed
             Velocity = Vector3.Normalize(Velocity) * _velocityLimit;
         }
 
-        var pks = GameStates.PreviousKState;
-        var pms = GameStates.PreviousMState;
         var ms = GameStates.MState;
 
-        if (ms.LeftButton == ButtonState.Pressed && Controls.Cooldown(200)) LeftClickAction();
-        if (pms.LeftButton == ButtonState.Pressed && ms.LeftButton == ButtonState.Released) Controls.ResetCooldown();
-        if (ms.RightButton == ButtonState.Pressed && Controls.Cooldown(200)) RightClickAction();
-        if (pms.RightButton == ButtonState.Pressed && ms.RightButton == ButtonState.Released) Controls.ResetCooldown();
-        if (ks.IsKeyDown(Keys.LeftShift) || ks.IsKeyDown(Keys.LeftControl)) IsSneaking = true;
+        if (ms.IsButtonDown(MouseButton.Left) && Controls.Cooldown(200)) LeftClickAction();
+        if (ms.WasButtonDown(MouseButton.Left) && ms.IsButtonReleased(MouseButton.Left)) Controls.ResetCooldown();
+        if (ms.IsButtonDown(MouseButton.Left) && Controls.Cooldown(200)) RightClickAction();
+        if (ms.WasButtonDown(MouseButton.Right) && ms.IsButtonReleased(MouseButton.Right)) Controls.ResetCooldown();
+        if (Input.IsKeyDown(Keys.LeftShift) || Input.IsKeyDown(Keys.LeftControl)) IsSneaking = true;
         else IsSneaking = false;
 
-        if (ks.IsKeyDown(Keys.P) && !pks.IsKeyDown(Keys.P))
+        if (Input.IsKeyPressed(Keys.P))
             Punch(
                 Camera.Direction, // Punch in the direction the player is looking
                 10f // Strength of the punch
             );
 
-        if (ks.IsKeyDown(Keys.R) && !pks.IsKeyUp(Keys.R)) Position = StartingCoords;
-
-        // Toggle noclip mode with V key
-        if (ks.IsKeyDown(Keys.V) && !pks.IsKeyDown(Keys.V))
-        {
-            IsNoclip = !IsNoclip;
-        }
-
         // Calculate the desired horizontal movement based on input
-        var desiredMovement = CalculateMovementInput(ks, deltaTime);
+        var desiredMovement = CalculateMovementInput(deltaTime);
 
         if (IsNoclip)
         {
@@ -178,17 +163,16 @@ public class Player
             var flySpeed = 12f; // Flying speed
             var forward = Vector3.Normalize(new Vector3(Camera.Direction.X, 0, Camera.Direction.Z));
             var right = Vector3.Normalize(Vector3.Cross(forward, _up));
-            if (ks.IsKeyDown(Keys.W)) flyMove += forward;
-            if (ks.IsKeyDown(Keys.S)) flyMove -= forward;
-            if (ks.IsKeyDown(Keys.D)) flyMove += right;
-            if (ks.IsKeyDown(Keys.A)) flyMove -= right;
-            if (ks.IsKeyDown(Keys.Space)) flyMove += Vector3.Up;
-            if (IsSneaking) flyMove += Vector3.Down;
+            if (Input.IsKeyDown(Keys.W)) flyMove += forward;
+            if (Input.IsKeyDown(Keys.S)) flyMove -= forward;
+            if (Input.IsKeyDown(Keys.D)) flyMove += right;
+            if (Input.IsKeyDown(Keys.A)) flyMove -= right;
+            if (Input.IsKeyDown(Keys.Space)) flyMove += Vector3Direction.Up;
+            if (IsSneaking) flyMove += Vector3Direction.Down;
             if (flyMove != Vector3.Zero) flyMove = Vector3.Normalize(flyMove);
             RawPosition += flyMove * flySpeed * deltaTime;
             UpdateBoundingBox();
-            UpdateCamera(gameTime);
-            _previousKeyboardState = _currentKeyboardState;
+            UpdateCamera(args);
             return;
         }
 
@@ -199,7 +183,7 @@ public class Player
         HandleJumpInput(deltaTime);
 
         // Calculate the total displacement vector for this frame
-        var displacement = CalculateDisplacement(desiredMovement, deltaTime);
+        var displacement = CalculateDisplacement(desiredMovement);
 
         // Predict and resolve collisions, updating position and physics state
 
@@ -207,12 +191,10 @@ public class Player
         if (CollisionEnabled) HandleCollisions(displacement, deltaTime);
         else RawPosition += displacement;
 
-        UpdateCamera(gameTime);
+        UpdateCamera(args);
 
         // Update the bounding box after position changes
         UpdateBoundingBox();
-
-        _previousKeyboardState = _currentKeyboardState;
     }
 
     private void PushBackIfAtWorldEdge()
@@ -223,7 +205,7 @@ public class Player
         // }
     }
 
-    private Vector3 CalculateMovementInput(KeyboardState ks, float deltaTime)
+    private Vector3 CalculateMovementInput(float deltaTime)
     {
         if (CanMove == false)
         {
@@ -238,17 +220,17 @@ public class Player
         var right = Vector3.Normalize(Vector3.Cross(forward, _up));
 
         // Determine if movement keys are pressed
-        _isMovementPressed = ks.IsKeyDown(Keys.W) ||
-                             ks.IsKeyDown(Keys.A) ||
-                             ks.IsKeyDown(Keys.S) ||
-                             ks.IsKeyDown(Keys.D);
+        _isMovementPressed = Input.IsKeyDown(Keys.W) ||
+                             Input.IsKeyDown(Keys.A) ||
+                             Input.IsKeyDown(Keys.S) ||
+                             Input.IsKeyDown(Keys.D);
 
         // Create a movement vector from key inputs
         var analogMove = Vector2.Zero;
-        if (ks.IsKeyDown(Keys.W)) analogMove.Y += 1;
-        if (ks.IsKeyDown(Keys.S)) analogMove.Y -= 1;
-        if (ks.IsKeyDown(Keys.D)) analogMove.X += 1;
-        if (ks.IsKeyDown(Keys.A)) analogMove.X -= 1;
+        if (Input.IsKeyDown(Keys.W)) analogMove.Y += 1;
+        if (Input.IsKeyDown(Keys.S)) analogMove.Y -= 1;
+        if (Input.IsKeyDown(Keys.D)) analogMove.X += 1;
+        if (Input.IsKeyDown(Keys.A)) analogMove.X -= 1;
 
         // Normalize the input if it's non-zero
         if (analogMove != Vector2.Zero) analogMove = Vector2.Normalize(analogMove);
@@ -284,7 +266,7 @@ public class Player
             CurrentMovement = Vector3.Lerp(targetMovement, CurrentMovement, _inertia);
 
             // Stop completely if movement is very small
-            if (CurrentMovement.LengthSquared() < 0.0001f) CurrentMovement = Vector3.Zero;
+            if (CurrentMovement.LengthSquared < 0.0001f) CurrentMovement = Vector3.Zero;
         }
         else
         {
@@ -327,15 +309,11 @@ public class Player
             _jumpCooldown -= 1 * deltaTime;
         }
 
-        var ks = Keyboard.GetState();
-
         // Handle jumping - allow jumping when grounded and cooldown is complete
-        if (ks.IsKeyDown(Keys.Space) && IsGrounded && _jumpCooldown <= 0)
+        if (Input.IsKeyDown(Keys.Space) && IsGrounded && _jumpCooldown <= 0)
         {
             Velocity.Y = _jumpForce * deltaTime;
-            //IsGrounded = false;
-            _isJumping = true;
-            _jumpCooldown = _jumpCooldownTime; // Set cooldown to prevent too rapid jumping
+            _jumpCooldown = _jumpCooldownTime;
         }
     }
 
@@ -351,7 +329,7 @@ public class Player
         // Limit the velocity to prevent excessive speed
     }
 
-    private Vector3 CalculateDisplacement(Vector3 horizontalMovement, float deltaTime)
+    private Vector3 CalculateDisplacement(Vector3 horizontalMovement)
     {
         // Combine horizontal movement with vertical velocity for total displacement
         Vector3 horizontalDisplacement = horizontalMovement;
@@ -379,8 +357,6 @@ public class Player
 
         // Then, try to move vertically (Y)
         RawPosition.Y += intendedDisplacement.Y;
-
-        // Update bounding box and check for collisions
         UpdateBoundingBox();
         Physics.ResolveCollisions();
 
@@ -392,7 +368,7 @@ public class Player
     {
         const float groundCheckDistance = 0.15f;
 
-        var allCorners = Box.GetCorners();
+        var allCorners = BoundingBox.GetCorners();
         var bottomCorners = new Vector3[4];
         bottomCorners[0] = allCorners[2];
         bottomCorners[1] = allCorners[3];
@@ -423,11 +399,13 @@ public class Player
 
     public void LeftClickAction()
     {
-        AssetManager.PlaySound(SoundAsset.missing, volume: 0.5f);
+        Console.WriteLine("left click action");
+        // AssetManager.PlaySound(SoundAsset.missing, volume: 0.5f);
     }
 
     public void RightClickAction()
     {
-        AssetManager.PlaySound(SoundAsset.missing, volume: 0.5f);
+        Console.WriteLine("right click action");
+        // AssetManager.PlaySound(SoundAsset.missing, volume: 0.5f);
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Latibule.Core.Physics;
+using OpenTK.Mathematics;
 
 namespace Latibule.Utilities;
 
@@ -43,8 +44,8 @@ public static class AabbHelper
         Vector3 t1 = (box.Min - ray.Position) * invDir;
         Vector3 t2 = (box.Max - ray.Position) * invDir;
 
-        Vector3 tMin = Vector3.Min(t1, t2);
-        Vector3 tMax = Vector3.Max(t1, t2);
+        Vector3 tMin = Vector3.ComponentMin(t1, t2);
+        Vector3 tMax = Vector3.ComponentMax(t1, t2);
 
         float tNear = System.Math.Max(tMin.X, System.Math.Max(tMin.Y, tMin.Z));
         float tFar = System.Math.Min(tMax.X, System.Math.Min(tMax.Y, tMax.Z));
@@ -60,10 +61,10 @@ public static class AabbHelper
     {
         hitPoint = Vector3.Zero;
         hitNormal = Vector3.Zero;
-        if (box == null) return false;
+        if (box == BoundingBox.Empty) return false;
 
         Vector3 direction = rayEnd - rayStart;
-        float length = direction.Length();
+        float length = direction.Length;
         direction.Normalize();
 
         Ray ray = new Ray(rayStart, direction);
@@ -100,12 +101,12 @@ public static class AabbHelper
     {
         // Build rotation matrix (rotation only!)
         var rot =
-            Matrix.CreateRotationX(MathHelper.ToRadians(rotationDegrees.X)) *
-            Matrix.CreateRotationY(MathHelper.ToRadians(rotationDegrees.Y)) *
-            Matrix.CreateRotationZ(MathHelper.ToRadians(rotationDegrees.Z));
+            Matrix4.CreateRotationX(MathHelper.DegreesToRadians(rotationDegrees.X)) *
+            Matrix4.CreateRotationY(MathHelper.DegreesToRadians(rotationDegrees.Y)) *
+            Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(rotationDegrees.Z));
 
         // Absolute rotation matrix (ignore translation row/column)
-        var absRot = new Matrix(
+        var absRot = new Matrix4(
             Math.Abs(rot.M11), Math.Abs(rot.M12), Math.Abs(rot.M13), 0,
             Math.Abs(rot.M21), Math.Abs(rot.M22), Math.Abs(rot.M23), 0,
             Math.Abs(rot.M31), Math.Abs(rot.M32), Math.Abs(rot.M33), 0,

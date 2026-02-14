@@ -14,8 +14,8 @@ public class ReloadWorld : ICommand
     {
         LatibuleGame.GameWorld.Dispose();
         LatibuleGame.GameWorld = new World();
-        LatibuleGame.GameWorld = LatibuleGame.CreateWorld(GameStates.Game);
-        LatibuleGame.GameWorld.Initialize();
+        LatibuleGame.GameWorld = LatibuleGame.CreateWorld();
+        LatibuleGame.GameWorld.OnLoad();
         DevConsole.CommandLog("RELOADING WORLD");
         return Task.CompletedTask;
     }

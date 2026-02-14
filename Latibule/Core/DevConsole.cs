@@ -1,6 +1,6 @@
 ﻿using ImGuiNET;
 using Latibule.Models;
-using Microsoft.Xna.Framework;
+using OpenTK.Windowing.Common;
 using ICommand = Latibule.Models.ICommand;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
@@ -19,21 +19,19 @@ public class DevConsole : IGuiScreen
     {
     }
 
-    public void Draw(GameTime gameTime)
+    public void OnRenderFrame(FrameEventArgs args)
     {
-        var deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
-        if (deltaTime <= 0) return;
+        if (args.Time <= 0) return;
 
-        LatibuleGame.ImGuiRenderer.BeginLayout(gameTime);
-        ImGui.Begin("Dev Console", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings);
+        ImGui.Begin("Dev Console", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
 
-        var sizeX = GameStates.Game.GraphicsDevice.Viewport.Width - 500;
-        var sizeY = GameStates.Game.GraphicsDevice.Viewport.Height - 200;
+        var sizeX = GameStates.GameWindow.Size.X - 500;
+        var sizeY = GameStates.GameWindow.Size.Y - 200;
         var x = ImGui.GetIO().DisplaySize.X / 2 - sizeX / 2;
         var y = ImGui.GetIO().DisplaySize.Y / 2 - sizeY / 2;
 
-        ImGui.SetWindowPos(new Vector2(x, y), ImGuiCond.Always);
-        ImGui.SetWindowSize(new Vector2(sizeX, sizeY), ImGuiCond.Always);
+        ImGui.SetWindowPos(new Vector2(x, y), ImGuiCond.Appearing);
+        ImGui.SetWindowSize(new Vector2(sizeX, sizeY), ImGuiCond.Once);
         ImGui.SetWindowFocus();
 
         ImGui.BeginChild("##messages", new Vector2(0, -ImGui.GetFrameHeightWithSpacing()));
@@ -78,7 +76,6 @@ public class DevConsole : IGuiScreen
         ImGui.PopStyleColor();
 
         ImGui.End();
-        LatibuleGame.ImGuiRenderer.EndLayout();
     }
 
     public static void Log(ConsoleMessage message) => _messages.Add(message);

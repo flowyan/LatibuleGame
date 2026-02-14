@@ -3,8 +3,9 @@ using ImGuiNET;
 using Latibule.Commands;
 using Latibule.Core;
 using Latibule.Models;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
 namespace Latibule.Services;
 
@@ -12,35 +13,37 @@ public static class GameStateManager
 {
     private static Action<char>? _textInputHandler;
 
-    public static void Initialize(Game game)
+    public static void Initialize(GameWindow gameWindow)
     {
-        GameStates.Initialize();
-        GameStates.Game = game;
-    }
+        GameStates.Initialize(gameWindow);
+        GameStates.GameWindow = gameWindow;
+        Input.Initialize(gameWindow.KeyboardState);
 
-    public static void Update(Game game, GameTime gameTime)
-    {
-        GameStates.KState = Keyboard.GetState();
-        GameStates.MState = Mouse.GetState();
-        var ks = GameStates.KState;
+        // Init binds
+        Input.BindComboPressed(
+            Keys.Escape,
+            gameWindow.Close,
+            Keys.LeftShift
+        );
+        Input.BindKeyPressed(Keys.F1, () => GameStates.ShowHud = !GameStates.ShowHud);
+        // if (Input.IsKeyPressedNow(Keys.F3)) LatibuleGame.DebugUi.ShowDebug = !LatibuleGame.DebugUi.ShowDebug;
+        Input.BindComboPressed(
+            Keys.B,
+            () => LatibuleGame.DebugUi3d.ShowBoundingBoxes = !LatibuleGame.DebugUi3d.ShowBoundingBoxes,
+            Keys.F3
+        );
+        Input.BindKeyPressed(Keys.F5, () => new ReloadWorld().Execute([]));
+        Input.BindKeyPressed(Keys.F11, () => gameWindow.WindowState = gameWindow.WindowState == WindowState.Fullscreen ? WindowState.Normal : WindowState.Fullscreen);
 
-        if (Input.AreKeysPressedNow(Keys.LeftShift, Keys.Escape)) game.Exit();
+        Input.BindKeyPressed(Keys.GraveAccent, () =>
+        {
+            if (GameStates.CurrentGui == null) SetUiOnScreen(new DevConsole(), imgui: true);
+        });
 
-        if (Input.IsKeyPressedNow(Keys.F1)) GameStates.ShowHud = !GameStates.ShowHud;
-
-        if (Input.IsKeyPressedNow(Keys.F3)) LatibuleGame.DebugUi.ShowDebug = !LatibuleGame.DebugUi.ShowDebug;
-
-        if (Input.AreKeysPressedNow(Keys.F3, Keys.B)) LatibuleGame.DebugUi3d.ShowBoundingBoxes = !LatibuleGame.DebugUi3d.ShowBoundingBoxes;
-
-        if (Input.IsKeyPressedNow(Keys.F5)) new ReloadWorld().Execute([]);
-
-        if (Input.IsKeyPressedNow(Keys.F11)) LatibuleGame.GDM.ToggleFullScreen();
-
-        if (Input.IsKeyPressedNow(Keys.OemTilde) && GameStates.CurrentGui == null) SetUiOnScreen(new DevConsole(), imgui: true);
-        if (Input.IsKeyPressedNow(Keys.Escape) && GameStates.CurrentGui != null) SetUiOnScreen();
-
-        GameStates.PreviousMState = GameStates.MState;
-        GameStates.PreviousKState = ks;
+        Input.BindKeyPressed(Keys.Escape, () =>
+        {
+            if (GameStates.CurrentGui != null) SetUiOnScreen();
+        });
     }
 
     public static void SetUiOnScreen(IGuiScreen? gui = null, bool imgui = false)
@@ -50,37 +53,35 @@ public static class GameStateManager
             // If the same GUI is requested, toggle it off
             Logger.LogDebug($"Hiding GUI: {GameStates.CurrentGui?.GetType().Name}", logToDevConsole: gui is DevConsole);
             GameStates.MouseLookLocked = false;
-            Mouse.IsRelativeMouseModeEXT = true;
-            GameStates.Game.IsMouseVisible = false;
+            GameStates.GameWindow.CursorState = CursorState.Grabbed;
             GameStates.CurrentGui = null;
-            ImGuiStopTextInput();
+            // ImGuiStopTextInput();
         }
         else if (GameStates.CurrentGui == null)
         {
-            if (imgui) ImGuiStartTextInput();
+            // if (imgui) ImGuiStartTextInput();
             gui.Initialize();
             Logger.LogDebug($"Showing GUI: {gui.GetType().Name}", logToDevConsole: gui is not DevConsole);
             GameStates.MouseLookLocked = true;
-            Mouse.IsRelativeMouseModeEXT = false;
-            GameStates.Game.IsMouseVisible = true;
+            GameStates.GameWindow.CursorState = CursorState.Normal;
             GameStates.CurrentGui = gui;
         }
     }
 
-    private static void ImGuiStartTextInput()
-    {
-        if (_textInputHandler != null) return;
-
-        var io = ImGui.GetIO();
-        _textInputHandler = c => LatibuleGame.ImGuiRenderer.OnTextInput(c, io);
-        TextInputEXT.TextInput += _textInputHandler;
-    }
-
-    private static void ImGuiStopTextInput()
-    {
-        if (_textInputHandler == null) return;
-
-        TextInputEXT.TextInput -= _textInputHandler;
-        _textInputHandler = null;
-    }
+    // private static void ImGuiStartTextInput()
+    // {
+    //     if (_textInputHandler != null) return;
+    //
+    //     var io = ImGui.GetIO();
+    //     _textInputHandler = c => LatibuleGame.ImGuiRenderer.OnTextInput(c, io);
+    //     // TextInputEXT.TextInput += _textInputHandler;
+    // }
+    //
+    // private static void ImGuiStopTextInput()
+    // {
+    //     if (_textInputHandler == null) return;
+    //
+    //     // TextInputEXT.TextInput -= _textInputHandler;
+    //     _textInputHandler = null;
+    // }
 }

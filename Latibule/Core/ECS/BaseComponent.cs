@@ -1,16 +1,15 @@
-﻿using Microsoft.Xna.Framework;
+﻿using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
 
 namespace Latibule.Core.ECS;
 
-public abstract class BaseComponent(Game game)
+public abstract class BaseComponent()
 {
-    public Game Game { get; } = game;
-
-    public virtual void Initialize()
+    public virtual void OnLoad()
     {
     }
 
-    public virtual void Update(GameTime gameTime)
+    public virtual void OnUpdateFrame(FrameEventArgs args)
     {
     }
 
@@ -18,7 +17,7 @@ public abstract class BaseComponent(Game game)
     {
     }
 
-    public virtual void Draw(GameTime gameTime)
+    public virtual void OnRenderFrame(FrameEventArgs args)
     {
     }
 }
