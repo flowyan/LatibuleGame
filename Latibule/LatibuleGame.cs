@@ -140,4 +140,10 @@ public class LatibuleGame : Game
         GameStates.CurrentGui?.Draw(gameTime);
         base.Draw(gameTime);
     }
+
+    protected override void Dispose(bool disposing)
+    {
+        GameWorld.Dispose();
+        base.Dispose(disposing);
+    }
 }
