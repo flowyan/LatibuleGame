@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.ComponentModel;
+using System.Drawing;
 using ImGuiNET;
 using Latibule.Core;
 using Latibule.Core.Components;
@@ -28,8 +29,7 @@ public class LatibuleGame : GameWindow
     // public static FontSystem Fonts { get; private set; }
     public static World GameWorld { get; set; }
 
-    static Shader? shader;
-    private PlaneModel? testPlane;
+    private static Shader? shader;
 
     public LatibuleGame(NativeWindowSettings nativeWindowSettings) : base(GameWindowSettings.Default, nativeWindowSettings)
     {
@@ -95,8 +95,6 @@ public class LatibuleGame : GameWindow
 
         // DebugUi = new DebugUi(GraphicsDevice);
         DebugUi3d = new DebugUi3D(debugUiShader);
-
-        Player = new Player(this, new Vector3(0, 0, 0));
     }
 
     protected override void OnUnload()
@@ -107,27 +105,32 @@ public class LatibuleGame : GameWindow
     public static World CreateWorld()
     {
         if (shader == null) throw new Exception("Shader not initialized");
-        var world = new World()
+        var world = new World();
+        Player = new Player()
         {
-            Objects =
-            [
-                new PlaneModel()
-                {
-                    Position = new Vector3(0, 0, 0),
-                    Scale = new Vector3(10, 0, 10),
-                    UVScale = new Vector2(5, 5),
-                    Components =
-                    [
-                        new ShaderComponent(shader)
-                        {
-                            Texture = new Texture($"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_TEXTURE_PATH}/material/stone.jpg")
-                        }
-                    ]
-                },
-                new CorridorModel(shader) { Position = new Vector3(12, 0, 0) },
-                new CorridorModel(shader) { Position = new Vector3(16, 0, 0) }
-            ]
+            Transform =
+            {
+                Position = new Vector3(0, 1, 0),
+            }
         };
+        world.AddObject(Player);
+        world.AddObject(new PlaneObject()
+        {
+            Transform =
+            {
+                Position = new Vector3(0, 0, 0),
+                Scale = new Vector3(10, 0, 10)
+            },
+        }.WithComponents([
+            new ShaderComponent(shader)
+            {
+                Texture = new Texture($"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_TEXTURE_PATH}/material/stone.jpg"),
+                UVScale = new Vector2(5, 5)
+            },
+        ]));
+        world.AddObject(new CorridorObject(shader) { Transform = { Position = new Vector3(12, 0, 0) } });
+        world.AddObject(new CorridorObject(shader) { Transform = { Position = new Vector3(16, 0, 0) } });
+
         return world;
     }
 
@@ -139,7 +142,6 @@ public class LatibuleGame : GameWindow
         // GameStates.MState = MouseState;
 
         // Now run game logic that reads input + current physics state
-        Player.Update(args);
         GameWorld.OnUpdateFrame(args);
 
         base.OnUpdateFrame(args);
@@ -152,18 +154,18 @@ public class LatibuleGame : GameWindow
         // CODE HERE //
 
         GameWorld.OnRenderFrame(args);
-        DebugUi3d.OnRenderFrame(Player);
+        DebugUi3d.OnRenderFrame();
 
         // --------- //
         DevConsoleService.OnRenderFrame(args, Context);
         SwapBuffers();
     }
 
-    public override void Close()
+    protected override void OnClosing(CancelEventArgs e)
     {
+        base.OnClosing(e);
         ImguiImplOpenGL3.Shutdown();
         ImguiImplOpenTK4.Shutdown();
-        base.Close();
     }
 
     protected override void OnFramebufferResize(FramebufferResizeEventArgs e)
@@ -176,6 +178,7 @@ public class LatibuleGame : GameWindow
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
+
         GameWorld.Dispose();
         shader?.Dispose();
     }
