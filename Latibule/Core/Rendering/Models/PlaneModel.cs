@@ -1,20 +1,24 @@
-﻿using Latibule.Core.ECS;
+﻿using Latibule.Core.Components;
+using Latibule.Core.ECS;
 using Latibule.Utilities;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using MathHelper = OpenTK.Mathematics.MathHelper;
+using static Latibule.Core.Logger;
 
 namespace Latibule.Core.Rendering.Models;
 
 /// <summary>
 /// A flat plane for ground/floor rendering and collision.
 /// </summary>
-public class PlaneModel(Shader shader) : GameObject
+public class PlaneModel() : GameObject
 {
     private int _vertexBufferObject;
     private int _vertexArrayObject;
     private int _elementBufferObject;
+
+    private Shader _shader = null!;
     private Texture? _texture;
 
     private readonly uint[] _indices =
@@ -26,7 +30,11 @@ public class PlaneModel(Shader shader) : GameObject
     public override void OnLoad()
     {
         base.OnLoad();
-        _texture = new Texture("Assets/texture/material/stone.jpg");
+
+        var component = Require<ShaderComponent>();
+        _shader = component.Shader;
+        _texture = component.Texture;
+        if (_texture == null) LogError("PlaneModel requires a texture in its ShaderComponent!");
 
         float[] _vertices =
         [
@@ -53,11 +61,11 @@ public class PlaneModel(Shader shader) : GameObject
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);
         GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
 
-        var location = shader.GetAttribLocation("aPosition");
+        var location = _shader.GetAttribLocation("aPosition");
         GL.EnableVertexAttribArray(location);
         GL.VertexAttribPointer(location, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
 
-        int texCoordLocation = shader.GetAttribLocation("aTexCoord");
+        int texCoordLocation = _shader.GetAttribLocation("aTexCoord");
         GL.EnableVertexAttribArray(texCoordLocation);
         GL.VertexAttribPointer(texCoordLocation, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
     }
@@ -74,11 +82,11 @@ public class PlaneModel(Shader shader) : GameObject
             Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(Rotation.Z)) *
             Matrix4.CreateTranslation(Position); // Must be last, order matters in matrices
 
-        shader.Use();
-        shader.SetMatrix4("model", model);
-        shader.SetMatrix4("view", camera.View);
-        shader.SetMatrix4("projection", camera.Projection);
-        shader.SetInt("texture0", 0); // Set texture sampler to use texture unit 0
+        _shader.Use();
+        _shader.SetMatrix4("model", model);
+        _shader.SetMatrix4("view", camera.View);
+        _shader.SetMatrix4("projection", camera.Projection);
+        _shader.SetInt("texture0", 0); // Set texture sampler to use texture unit 0
 
         _texture?.Use();
 
