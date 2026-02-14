@@ -32,9 +32,9 @@ public class Camera
     private float _yaw;
     private float _pitch;
 
-    public Camera(float aspectRatio, Vector3 position, Vector3 target, Vector3 eyePosition)
+    public Camera(Vector3 position, Vector3 target, Vector3 eyePosition)
     {
-        _aspectRatio = aspectRatio;
+        _aspectRatio = GameStates.GameWindow.Bounds.Size.X / (float)GameStates.GameWindow.Bounds.Size.Y;
         _target = target;
 
         Position = position;
