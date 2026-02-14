@@ -1,8 +1,10 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Latibule.Core.Physics;
+using OpenTK.Mathematics;
+using OpenTK.Windowing.Common;
 
 namespace Latibule.Core.ECS;
 
-public class GameObject(Game game)
+public class GameObject() : IDisposable
 {
     public Vector3 Position { get; set; } = Vector3.Zero;
 
@@ -10,45 +12,48 @@ public class GameObject(Game game)
 
     public Vector3 Scale { get; set; } = Vector3.One;
     public Vector2 UVScale { get; set; } = Vector2.One;
-
-    public BoundingBox BoundingBox { get; protected set; }
-
     public GameObject? Parent { get; protected set; } = null;
     public GameObject[] Children { get; private set; } = Array.Empty<GameObject>();
 
-    private readonly Dictionary<Type, BaseComponent> _byType = new();
-    private BaseComponent[] _components = Array.Empty<BaseComponent>();
+    /// <summary>
+    /// Whether this object participates in AABB collision detection with the player.
+    /// </summary>
+    public bool HasCollision { get; set; } = true;
 
-    public BaseComponent[]? Components
+    public BoundingBox BoundingBox { get; protected set; }
+
+    private readonly Dictionary<Type, BaseComponent> _byType = new();
+
+    public BaseComponent[] Components
     {
-        get => _components;
-        set
+        get;
+        init
         {
-            _components = value ?? Array.Empty<BaseComponent>();
+            field = value;
             _byType.Clear();
-            foreach (var c in _components)
+            foreach (var c in field)
                 _byType[c.GetType()] = c; // last one wins
         }
-    }
+    } = [];
 
-    public virtual void Initialize()
+    public virtual void OnLoad()
     {
-        foreach (var component in Components) component.Initialize();
-        foreach (var child in Children) child.Initialize();
+        foreach (var component in Components) component.OnLoad();
+        foreach (var child in Children) child.OnLoad();
 
         LatibuleGame.GameWorld.AddObject(this);
     }
 
-    public virtual void Update(GameTime gameTime)
+    public virtual void OnUpdateFrame(FrameEventArgs args)
     {
-        foreach (var component in Components) component.Update(gameTime);
-        foreach (var child in Children) child.Update(gameTime);
+        foreach (var component in Components) component.OnUpdateFrame(args);
+        foreach (var child in Children) child.OnUpdateFrame(args);
     }
 
-    public virtual void Draw(GameTime gameTime)
+    public virtual void OnRenderFrame(FrameEventArgs args)
     {
-        foreach (var component in Components) component.Draw(gameTime);
-        foreach (var child in Children) child.Draw(gameTime);
+        foreach (var component in Components) component.OnRenderFrame(args);
+        foreach (var child in Children) child.OnRenderFrame(args);
     }
 
     public virtual void Dispose()

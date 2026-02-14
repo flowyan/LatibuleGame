@@ -3,5 +3,5 @@
 public interface IGuiScreen
 {
     public void Initialize();
-    public void Draw(float deltaTime);
+    public void OnRenderFrame(float deltaTime);
 }
