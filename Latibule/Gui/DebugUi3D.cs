@@ -60,7 +60,7 @@ public sealed class DebugUi3D : IDisposable
         GL.BindVertexArray(0);
     }
 
-    public void OnRenderFrame(Player player)
+    public void OnRenderFrame()
     {
         if (!ShowBoundingBoxes) return;
 
@@ -68,7 +68,7 @@ public sealed class DebugUi3D : IDisposable
         GL.Enable(EnableCap.DepthTest);   // occluded by world
         // GL.Disable(EnableCap.DepthTest);  // always visible
 
-        DrawBoundingBoxOutline(player.BoundingBox, Color.White);
+        DrawBoundingBoxOutline(LatibuleGame.Player.BoundingBox, Color.White);
 
         foreach (var boundingBox in LatibuleGame.GameWorld.GetBoundingBoxes())
             DrawBoundingBoxOutline(boundingBox, Color.Yellow);
