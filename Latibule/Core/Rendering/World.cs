@@ -1,5 +1,7 @@
-﻿using Latibule.Core.ECS;
+﻿using Latibule.Core.Components;
+using Latibule.Core.ECS;
 using Latibule.Core.Physics;
+using Latibule.Entities;
 using OpenTK.Windowing.Common;
 
 namespace Latibule.Core.Rendering;
@@ -90,7 +92,10 @@ public class World
             _boundingBoxes = new BoundingBox[Objects.Count];
 
         for (int i = 0; i < Objects.Count; i++)
-            _boundingBoxes[i] = Objects[i].BoundingBox;
+        {
+            var box = Objects[i].Get<CollisionComponent>()?.BoundingBox;
+            if (box != null) _boundingBoxes[i] = box.Value;
+        }
 
         return _boundingBoxes;
     }
@@ -101,10 +106,14 @@ public class World
     /// </summary>
     public BoundingBox[] GetCollidableBoxes()
     {
-        var collidables = Objects.Where(o => o.HasCollision).ToList();
+        var collidables = Objects.Where(o => (bool)o.Get<CollisionComponent>()?.HasCollision).ToList();
         var result = new BoundingBox[collidables.Count];
         for (int i = 0; i < collidables.Count; i++)
-            result[i] = collidables[i].BoundingBox;
+        {
+            var box = Objects[i].Get<CollisionComponent>()?.BoundingBox;
+            if (box != null) result[i] = box.Value;
+        }
+
         return result;
     }
 }
