@@ -5,7 +5,7 @@ using Latibule.Models;
 
 namespace Latibule.Commands;
 
-public class GameObjects : ICommand
+public class ListGameObjects : ICommand
 {
     public string Name { get; } = "gameobjects";
     public List<string> Aliases { get; } = [];
@@ -17,7 +17,7 @@ public class GameObjects : ICommand
         foreach (var o in LatibuleGame.GameWorld.Objects.Where(o => o.Parent == null))
         {
             var children = $"[{o.Children.Length} {(o.Children.Length == 1 ? "child" : "children")}]";
-            list += $"- {o.GetType().Name} at ({o.Position.X},{o.Position.Y},{o.Position.Z}) {(o.Children.Length > 0 ? children : "")}";
+            list += $"- {o.GetType().Name} at ({o.Transform.Position.X},{o.Transform.Position.Y},{o.Transform.Position.Z}) {(o.Children.Length > 0 ? children : "")}";
             list += "\n";
         }
 
