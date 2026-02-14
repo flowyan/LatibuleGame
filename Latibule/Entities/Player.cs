@@ -1,4 +1,5 @@
 using Latibule.Core;
+using Latibule.Core.ECS;
 using Latibule.Core.Gameplay;
 using Latibule.Core.Physics;
 using Latibule.Models;
@@ -10,21 +11,14 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 
 namespace Latibule.Entities;
 
-public class Player
+public class Player : GameObject
 {
     public Vector3 StartingCoords { get; set; }
-    public Vector3 RawPosition;
-    private Vector3 _up;
 
-    public Vector3 Position
+    public Vector3 RawPosition
     {
-        get => RawPosition;
-        set
-        {
-            RawPosition = value;
-            Velocity = Vector3.Zero;
-            UpdateBoundingBox();
-        }
+        get => Transform.Position;
+        set => Transform.Position = value;
     }
 
     private Vector3 CameraPosition => new(RawPosition.X, EyePosition.Y, RawPosition.Z);
@@ -70,23 +64,24 @@ public class Player
     public bool LookEnabled { get; set; } = true;
     public bool CanMove { get; set; } = true;
 
-    public Player(GameWindow gameWindow, Vector3 startingCoords)
+    public override void OnLoad()
     {
+        base.OnLoad();
+
         var direction = Vector3Direction.Forward;
-        Camera = new Camera(gameWindow.Size.X / (float)gameWindow.Size.Y, CameraPosition, direction, EyePosition);
+        Camera = new Camera(CameraPosition, direction, EyePosition);
         Physics = new PlayerPhysics(this);
 
         // Initialize position and orientation
-        StartingCoords = startingCoords;
-        Position = startingCoords;
-        _up = Vector3Direction.Up;
+        StartingCoords = Transform.Position;
 
         // Initialize the player's bounding box
         UpdateBoundingBox();
 
         // Bind inputs
-        Input.BindKeyPressed(Keys.R, () => Position = StartingCoords);
+        Input.BindKeyPressed(Keys.R, () => Transform.Position = StartingCoords);
         Input.BindKeyPressed(Keys.V, () => IsNoclip = !IsNoclip);
+        Input.BindKeyPressed(Keys.P, () => Punch(Camera.Direction, 10f));
     }
 
     public void UpdateBoundingBox()
@@ -94,17 +89,17 @@ public class Player
         // Calculate the minimum corner for BoundingBox (not the center)
         // Center the bounding box horizontally around the player's position
         var min = new Vector3(
-            Position.X - (Width / 2f),
-            Position.Y, // Feet at bottom of bounding box
-            Position.Z - (Depth / 2f)
+            Transform.Position.X - (Width / 2f),
+            Transform.Position.Y, // Feet at bottom of bounding box
+            Transform.Position.Z - (Depth / 2f)
         );
 
         var height = IsSneaking ? HeightSneak : Height; // Adjust height for sneaking
 
         var max = new Vector3(
-            Position.X + (Width / 2f),
-            Position.Y + height, // Top of bounding box
-            Position.Z + (Depth / 2f)
+            Transform.Position.X + (Width / 2f),
+            Transform.Position.Y + height, // Top of bounding box
+            Transform.Position.Z + (Depth / 2f)
         );
 
         BoundingBox = new BoundingBox(min, max);
@@ -117,7 +112,7 @@ public class Player
         Camera.Update(args);
     }
 
-    public void Update(FrameEventArgs args)
+    public override void OnUpdateFrame(FrameEventArgs args)
     {
         if (GameStates.CurrentGui is DevConsole) return;
 
@@ -146,12 +141,6 @@ public class Player
         if (Input.IsKeyDown(Keys.LeftShift) || Input.IsKeyDown(Keys.LeftControl)) IsSneaking = true;
         else IsSneaking = false;
 
-        if (Input.IsKeyPressed(Keys.P))
-            Punch(
-                Camera.Direction, // Punch in the direction the player is looking
-                10f // Strength of the punch
-            );
-
         // Calculate the desired horizontal movement based on input
         var desiredMovement = CalculateMovementInput(deltaTime);
 
@@ -162,7 +151,7 @@ public class Player
             Vector3 flyMove = Vector3.Zero;
             var flySpeed = 12f; // Flying speed
             var forward = Vector3.Normalize(new Vector3(Camera.Direction.X, 0, Camera.Direction.Z));
-            var right = Vector3.Normalize(Vector3.Cross(forward, _up));
+            var right = Vector3.Normalize(Vector3.Cross(forward, Vector3Direction.Up));
             if (Input.IsKeyDown(Keys.W)) flyMove += forward;
             if (Input.IsKeyDown(Keys.S)) flyMove -= forward;
             if (Input.IsKeyDown(Keys.D)) flyMove += right;
@@ -201,7 +190,7 @@ public class Player
     {
         // if (Engine.WorldLevelManager.Current.GetPlayerChunk(new BlockCoord(Position)) == null)
         // {
-        //     Position = Vector3.Lerp(Position, new Vector3(0, Position.Y, 0), 0.02f);
+        //     Position = Vector3.Lerp(Position, new Vector3(0, Transform.Position.Y, 0), 0.02f);
         // }
     }
 
@@ -217,7 +206,7 @@ public class Player
         // Calculate forward and right vectors for movement
         var forward =
             Vector3.Normalize(new Vector3(Camera.Direction.X, 0, Camera.Direction.Z)); // Ground-aligned forward
-        var right = Vector3.Normalize(Vector3.Cross(forward, _up));
+        var right = Vector3.Normalize(Vector3.Cross(forward, Vector3Direction.Up));
 
         // Determine if movement keys are pressed
         _isMovementPressed = Input.IsKeyDown(Keys.W) ||
@@ -347,8 +336,8 @@ public class Player
         var horizontalMove = new Vector3(intendedDisplacement.X, 0, intendedDisplacement.Z);
         if (horizontalMove != Vector3.Zero)
         {
-            RawPosition.X += horizontalMove.X;
-            RawPosition.Z += horizontalMove.Z;
+            RawPosition = RawPosition with { X = RawPosition.X + horizontalMove.X };
+            RawPosition = RawPosition with { Z = RawPosition.Z + horizontalMove.Z };
 
             // Update bounding box and check for collisions
             UpdateBoundingBox();
@@ -356,7 +345,7 @@ public class Player
         }
 
         // Then, try to move vertically (Y)
-        RawPosition.Y += intendedDisplacement.Y;
+        RawPosition = RawPosition with { Y = RawPosition.Y + intendedDisplacement.Y };
         UpdateBoundingBox();
         Physics.ResolveCollisions();
 
@@ -389,7 +378,7 @@ public class Player
 
                 var distanceToGround = rayStart.Y - hitPoint.Y;
                 if (!(distanceToGround < 0.0001f)) return;
-                RawPosition.Y = hitPoint.Y + 0.0001f;
+                RawPosition = RawPosition with { Y = hitPoint.Y + 0.0001f };
                 UpdateBoundingBox();
 
                 return;
