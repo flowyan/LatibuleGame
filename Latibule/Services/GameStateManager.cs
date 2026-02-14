@@ -16,15 +16,22 @@ public static class GameStateManager
     public static void Initialize(GameWindow gameWindow)
     {
         GameStates.Initialize(gameWindow);
+        GameStates.GameWindow = gameWindow;
         Input.Initialize(gameWindow.KeyboardState);
 
         // Init binds
-
-        // if (Input.AreKeysPressedNow(Keys.LeftShift, Keys.Escape)) gameWindow.Close();
-        Input.BindKeyPressed(Keys.Escape, gameWindow.Close);
+        Input.BindComboPressed(
+            Keys.Escape,
+            gameWindow.Close,
+            Keys.LeftShift
+        );
         Input.BindKeyPressed(Keys.F1, () => GameStates.ShowHud = !GameStates.ShowHud);
         // if (Input.IsKeyPressedNow(Keys.F3)) LatibuleGame.DebugUi.ShowDebug = !LatibuleGame.DebugUi.ShowDebug;
-        // if (Input.AreKeysPressedNow(Keys.F3, Keys.B)) LatibuleGame.DebugUi3d.ShowBoundingBoxes = !LatibuleGame.DebugUi3d.ShowBoundingBoxes;
+        Input.BindComboPressed(
+            Keys.B,
+            () => LatibuleGame.DebugUi3d.ShowBoundingBoxes = !LatibuleGame.DebugUi3d.ShowBoundingBoxes,
+            Keys.F3
+        );
         Input.BindKeyPressed(Keys.F5, () => new ReloadWorld().Execute([]));
         Input.BindKeyPressed(Keys.F11, () => gameWindow.WindowState = gameWindow.WindowState == WindowState.Fullscreen ? WindowState.Normal : WindowState.Fullscreen);
 
