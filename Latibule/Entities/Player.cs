@@ -1,3 +1,4 @@
+using Latibule.Core;
 using Latibule.Core.Data;
 using Latibule.Core.Gameplay;
 using Latibule.Models;
@@ -119,6 +120,8 @@ public class Player
 
     public void Update(GameTime gameTime)
     {
+        if (GameStates.CurrentGui is DevConsole) return;
+
         _currentKeyboardState = Keyboard.GetState();
 
         var ks = _currentKeyboardState;
