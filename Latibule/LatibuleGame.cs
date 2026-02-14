@@ -1,17 +1,18 @@
 ﻿using FontStashSharp;
 using Latibule.Core;
+using Latibule.Core.Components;
 using Latibule.Core.Data;
+using Latibule.Core.ImGuiNet;
 using Latibule.Core.Rendering;
 using Latibule.Core.Rendering.Objects;
 using Latibule.Entities;
 using Latibule.Gui;
-using Latibule.Models;
 using Latibule.Services;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using static Latibule.Core.Logger;
-using Plane = Latibule.Core.Rendering.Objects.Plane;
+using Plane = Latibule.Core.Rendering.Models.Plane;
 
 namespace Latibule;
 
@@ -25,7 +26,7 @@ public class LatibuleGame : Game
     public static Player Player { get; private set; }
     public static FontSystem Fonts { get; private set; }
 
-    public static World GameWorld { get; private set; }
+    public static World GameWorld { get; set; }
 
     [STAThread]
     public static void Main(string[] args)
@@ -67,15 +68,6 @@ public class LatibuleGame : Game
 
         DebugUi = new DebugUi(GraphicsDevice);
         DebugUi3d = new DebugUi3D(GraphicsDevice);
-        // TESTING WORLD
-        GameWorld = new World()
-        {
-            Objects =
-            [
-                new Plane(this) { Position = new Vector3(0, 0, 0), Scale = new Vector3(10, 0, 10), UVScale = new Vector2(5, 5) },
-                new Corridor(this) { Position = new Vector3(0, 2, 0) }
-            ]
-        };
 
         base.Initialize();
     }
@@ -86,7 +78,36 @@ public class LatibuleGame : Game
         AssetManager.LoadAssets(Content, GraphicsDevice);
         AssetManager.PlaySound(SoundAsset.tada, volume: 0.25f, randomPitch: false);
 
+        // TESTING WORLD
+        GameWorld = CreateWorld(this);
+
         base.LoadContent();
+    }
+
+    public static World CreateWorld(Game game)
+    {
+        var world = new World()
+        {
+            Objects =
+            [
+                new Plane(game)
+                {
+                    Position = new Vector3(0, 0, 0),
+                    Scale = new Vector3(10, 0, 10),
+                    UVScale = new Vector2(5, 5),
+                    Components =
+                    [
+                        new BasicEffectComponent(game)
+                        {
+                            Texture = AssetManager.GetTexture(TextureAsset.material_stone)
+                        }
+                    ]
+                },
+                new Corridor(game) { Position = new Vector3(12, 0, 0) },
+                new Corridor(game) { Position = new Vector3(16, 0, 0) }
+            ]
+        };
+        return world;
     }
 
     protected override void UnloadContent()
@@ -118,8 +139,6 @@ public class LatibuleGame : Game
 
             return;
         }
-
-        if (GameStates.CurrentGui is DevConsole) return;
 
         Player.Update(gameTime);
         GameWorld.Update(gameTime);
