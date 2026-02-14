@@ -1,16 +1,16 @@
-﻿using Latibule.Core.Data;
-using Latibule.Models;
+﻿using Latibule.Core.Components;
+using Latibule.Core.ECS;
 using Latibule.Utilities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace Latibule.Core.Rendering.Objects;
+namespace Latibule.Core.Rendering.Models;
 
 public class Plane(Game game) : GameObject(game)
 {
-    private VertexBuffer _vertexBuffer;
-    private IndexBuffer _indexBuffer;
-    private BasicEffect _effect;
+    private VertexBuffer? _vertexBuffer;
+    private IndexBuffer? _indexBuffer;
+    private BasicEffect? _basicEffect;
 
     private readonly RasterizerState _rasterizerState = new()
     {
@@ -22,6 +22,7 @@ public class Plane(Game game) : GameObject(game)
 
     public override void Initialize()
     {
+        _basicEffect = Require<BasicEffectComponent>().Effect;
         var _graphicsDevice = _game.GraphicsDevice;
         var planeVertices = new VertexPositionTexture[4];
 
@@ -40,7 +41,6 @@ public class Plane(Game game) : GameObject(game)
             new Vector3(Scale.X, 0, Scale.Z),
             Rotation
         );
-
 
         var planeIndices = new short[]
         {
@@ -64,17 +64,12 @@ public class Plane(Game game) : GameObject(game)
         );
         _indexBuffer.SetData(planeIndices);
 
-        _effect = new BasicEffect(_graphicsDevice)
-        {
-            TextureEnabled = true,
-            Texture = AssetManager.GetTexture(TextureAsset.material_stone),
-        };
-
         base.Initialize();
     }
 
     public override void Draw(GameTime gameTime)
     {
+        if (_basicEffect == null) return;
         var graphicsDevice = _game.GraphicsDevice;
         var oldBlendState = graphicsDevice.BlendState;
         var oldDepthStencilState = graphicsDevice.DepthStencilState;
@@ -86,20 +81,20 @@ public class Plane(Game game) : GameObject(game)
         graphicsDevice.RasterizerState = _rasterizerState;
 
         var camera = LatibuleGame.Player.Camera;
-        _effect.World =
+        _basicEffect.World =
             Matrix.CreateScale(Scale) *
             Matrix.CreateRotationX(MathHelper.ToRadians(Rotation.X)) *
             Matrix.CreateRotationY(MathHelper.ToRadians(Rotation.Y)) *
             Matrix.CreateRotationZ(MathHelper.ToRadians(Rotation.Z)) *
             Matrix.CreateTranslation(Position) // Must be last, order matters in matrices
             ;
-        _effect.View = camera.View;
-        _effect.Projection = camera.Projection;
+        _basicEffect.View = camera.View;
+        _basicEffect.Projection = camera.Projection;
 
         graphicsDevice.SetVertexBuffer(_vertexBuffer);
         graphicsDevice.Indices = _indexBuffer;
 
-        foreach (var pass in _effect.CurrentTechnique.Passes)
+        foreach (var pass in _basicEffect.CurrentTechnique.Passes)
         {
             pass.Apply();
             graphicsDevice.DrawIndexedPrimitives(
@@ -117,5 +112,13 @@ public class Plane(Game game) : GameObject(game)
         graphicsDevice.RasterizerState = oldRasterizerState;
 
         base.Draw(gameTime);
+    }
+
+    public override void Dispose()
+    {
+        _vertexBuffer?.Dispose();
+        _indexBuffer?.Dispose();
+        _rasterizerState.Dispose();
+        base.Dispose();
     }
 }
