@@ -1,8 +1,7 @@
 ﻿using Latibule.Core.Components;
 using Latibule.Core.ECS;
-using Latibule.Core.Rendering.Mesh;
 
-namespace Latibule.Core.Rendering.Models;
+namespace Latibule.Core.Rendering.Objects;
 
 /// <summary>
 /// A flat plane for ground/floor rendering and collision.
