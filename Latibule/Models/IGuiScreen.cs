@@ -1,7 +1,9 @@
-﻿namespace Latibule.Models;
+﻿using OpenTK.Windowing.Common;
+
+namespace Latibule.Models;
 
 public interface IGuiScreen
 {
     public void Initialize();
-    public void OnRenderFrame(float deltaTime);
+    public void OnRenderFrame(FrameEventArgs args);
 }
