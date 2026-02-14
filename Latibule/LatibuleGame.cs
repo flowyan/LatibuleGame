@@ -1,6 +1,8 @@
 ﻿using System.Drawing;
+using ImGuiNET;
 using Latibule.Core;
-using Latibule.Core.Physics;
+using Latibule.Core.Components;
+using Latibule.Core.ImGuiNet;
 using Latibule.Core.Rendering;
 using Latibule.Core.Rendering.Models;
 using Latibule.Core.Rendering.Objects;
@@ -11,7 +13,6 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using static Latibule.Core.Logger;
 
 namespace Latibule;
@@ -45,30 +46,48 @@ public class LatibuleGame : GameWindow
 
         UpdateFrequency = GameOptions.TargetFPS;
         VSync = VSyncMode.Off;
-
         CursorState = CursorState.Grabbed;
 
         // ImGuiRenderer.RebuildFontAtlas();
         // AssetManager.LoadAssets(Content, GraphicsDevice);
         // AssetManager.PlaySound(SoundAsset.tada, volume: 0.25f, randomPitch: false);
 
-        GLFW.WindowHint(WindowHintInt.DepthBits, 24);
-
         shader = new Shader(
-            "Assets/shader/triangle/shader.vert",
-            "Assets/shader/triangle/shader.frag"
+            $"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}/triangle/shader.vert",
+            $"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}/triangle/shader.frag"
         );
 
         var debugUiShader = new Shader(
-            "Assets/shader/debugui/debug_lines.vert",
-            "Assets/shader/debugui/debug_lines.frag"
+            $"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}/debugui/debug_lines.vert",
+            $"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}/debugui/debug_lines.frag"
         );
+
         GL.ClearColor(Color.DimGray);
         GL.Enable(EnableCap.CullFace);
         GL.FrontFace(FrontFaceDirection.Cw);
         GL.DepthFunc(DepthFunction.Lequal);
         GL.ClearDepth(1.0);
         GL.DepthMask(true);
+
+        // IMGUI
+        ImGui.CreateContext();
+        ImGuiIOPtr io = ImGui.GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
+        io.ConfigFlags |= ImGuiConfigFlags.NavEnableGamepad;
+        io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+        io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable;
+
+        ImGui.StyleColorsDark();
+
+        ImGuiStylePtr style = ImGui.GetStyle();
+        if ((io.ConfigFlags & ImGuiConfigFlags.ViewportsEnable) != 0)
+        {
+            style.WindowRounding = 0.0f;
+            style.Colors[(int)ImGuiCol.WindowBg].W = 1.0f;
+        }
+
+        ImguiImplOpenTK4.Init(this);
+        ImguiImplOpenGL3.Init();
 
         // TESTING WORLD
         GameWorld = CreateWorld();
@@ -92,13 +111,17 @@ public class LatibuleGame : GameWindow
         {
             Objects =
             [
-                new PlaneModel(shader)
+                new PlaneModel()
                 {
                     Position = new Vector3(0, 0, 0),
                     Scale = new Vector3(10, 0, 10),
                     UVScale = new Vector2(5, 5),
                     Components =
                     [
+                        new ShaderComponent(shader)
+                        {
+                            Texture = new Texture($"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_TEXTURE_PATH}/material/stone.jpg")
+                        }
                     ]
                 },
                 new CorridorModel(shader) { Position = new Vector3(12, 0, 0) },
@@ -110,8 +133,7 @@ public class LatibuleGame : GameWindow
 
     protected override void OnUpdateFrame(FrameEventArgs args)
     {
-        if (!IsFocused)
-            return;
+        if (!IsFocused) return;
 
         Input.Update(KeyboardState);
         // GameStates.MState = MouseState;
@@ -126,12 +148,22 @@ public class LatibuleGame : GameWindow
     protected override void OnRenderFrame(FrameEventArgs args)
     {
         base.OnRenderFrame(args);
-        GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+        GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+        // CODE HERE //
 
         GameWorld.OnRenderFrame(args);
         DebugUi3d.OnRenderFrame(Player);
 
+        // --------- //
+        DevConsoleService.OnRenderFrame(args, Context);
         SwapBuffers();
+    }
+
+    public override void Close()
+    {
+        ImguiImplOpenGL3.Shutdown();
+        ImguiImplOpenTK4.Shutdown();
+        base.Close();
     }
 
     protected override void OnFramebufferResize(FramebufferResizeEventArgs e)
