@@ -63,6 +63,7 @@ public class LatibuleGame : Game
         DevConsoleService.Initialize();
         ImGuiRenderer = new ImGuiRenderer(this);
         Fonts = new FontSystem();
+        TextInputEXT.StartTextInput();
 
         DebugUi = new DebugUi(GraphicsDevice);
         DebugUi3d = new DebugUi3D(GraphicsDevice);
