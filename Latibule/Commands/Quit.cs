@@ -10,7 +10,7 @@ public class Quit : ICommand
 
     public Task Execute(string[] args)
     {
-        GameStates.Game.Exit();
+        GameStates.GameWindow.Close();
         return Task.CompletedTask;
     }
 }
