@@ -1,7 +1,10 @@
 ﻿using System.Numerics;
 using System.Reflection;
+using ImGuiNET;
 using Latibule.Core;
+using Latibule.Core.ImGuiNet;
 using Latibule.Models;
+using Microsoft.Xna.Framework.Input;
 
 namespace Latibule.Services;
 
@@ -23,12 +26,6 @@ public static class DevConsoleService
             .Where(t => t.GetInterfaces().Contains(typeof(ICommand)))
             .Select(t => Activator.CreateInstance(t) as ICommand)
             .ToList();
-
-        // Load console commands from the calling assembly
-        foreach (var consoleCommand in Assembly.GetCallingAssembly().GetTypes()
-                     .Where(t => t.GetInterfaces().Contains(typeof(ICommand)))
-                     .Select(t => Activator.CreateInstance(t) as ICommand)
-                     .ToList()) DevConsole.ConsoleCommands.Add(consoleCommand);
 
         Logger.LogInfo($"Loaded {DevConsole.ConsoleCommands.Count} console commands.");
     }
