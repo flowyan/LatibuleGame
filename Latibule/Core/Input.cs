@@ -1,51 +1,46 @@
-﻿using Microsoft.Xna.Framework.Input;
+﻿using OpenTK.Windowing.GraphicsLibraryFramework;
 
 namespace Latibule.Core;
 
 public static class Input
 {
-    /// <summary>
-    /// Checks if the specified key is pressed now.
-    ///
-    /// Will make it, so if you hold down the key, it won't trigger multiple times.
-    /// </summary>
-    /// <param name="key">The key to check.</param>
-    /// <returns>True if the specified key is pressed now; otherwise, false.</returns>
-    public static bool IsKeyPressedNow(Keys key) => GameStates.KState.IsKeyDown(key) && GameStates.PreviousKState.IsKeyUp(key);
+    private static KeyboardState _ks = null!;
 
-    /// <summary>
-    /// Checks if all keys are pressed at the same time
-    ///
-    /// First key must be pressed first.
-    /// </summary>
-    /// <param name="keys">Keys to check</param>
-    /// <returns>True if all keys are pressed</returns>
-    public static bool AreKeysPressedNow(params Keys[] keys)
+    private static readonly Dictionary<Keys, List<Action>> _pressed = new();
+    private static readonly Dictionary<Keys, List<Action>> _released = new();
+
+    public static void Initialize(KeyboardState keyboardState) => _ks = keyboardState;
+
+    public static void Update(KeyboardState keyboardState)
     {
-        var first = IsKeyPressed(keys[0]);
-        var rest = keys.Skip(1).All(IsKeyPressedNow);
+        _ks = keyboardState;
 
-        return first && rest;
+        foreach (var (key, actions) in _pressed)
+            if (_ks.IsKeyPressed(key))
+                foreach (var t in actions)
+                    t();
+
+        foreach (var (key, actions) in _released)
+            if (_ks.IsKeyReleased(key))
+                foreach (var t in actions)
+                    t();
     }
 
-    /// <summary>
-    /// Checks if the specified key is currently pressed.
-    /// </summary>
-    /// <param name="key">The key to check for a pressed state.</param>
-    /// <returns>True if the specified key is pressed; otherwise, false.</returns>
-    public static bool IsKeyPressed(Keys key) => GameStates.KState.IsKeyDown(key);
+    public static void BindKeyPressed(Keys key, Action action) => Add(_pressed, key, action);
+    public static void BindKeyReleased(Keys key, Action action) => Add(_released, key, action);
 
-    /// <summary>
-    /// Checks if a key is released.
-    /// </summary>
-    /// <param name="key">The key to check.</param>
-    /// <returns>True if the specified key has been released; otherwise, false.</returns>
-    public static bool IsKeyReleased(Keys key) => GameStates.PreviousKState.IsKeyDown(key);
+    public static bool IsKeyDown(Keys key) => _ks.IsKeyDown(key);
+    public static bool IsKeyPressed(Keys key) => _ks.IsKeyPressed(key);
+    public static bool IsKeyReleased(Keys key) => _ks.IsKeyReleased(key);
 
-    /// <summary>
-    /// Checks if all specified keys are currently being pressed.
-    /// </summary>
-    /// <param name="keys">An array of keys to check.</param>
-    /// <returns>True if all specified keys are pressed; otherwise, false.</returns>
-    public static bool AreKeysPressed(params Keys[] keys) => keys.All(IsKeyPressed);
+    private static void Add(Dictionary<Keys, List<Action>> map, Keys key, Action action)
+    {
+        if (!map.TryGetValue(key, out var list))
+        {
+            list = new List<Action>(1);
+            map[key] = list;
+        }
+
+        list.Add(action);
+    }
 }
