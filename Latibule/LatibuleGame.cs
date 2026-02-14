@@ -130,6 +130,7 @@ public class LatibuleGame : GameWindow
         ]));
         world.AddObject(new CorridorObject(shader) { Transform = { Position = new Vector3(12, 0, 0) } });
         world.AddObject(new CorridorObject(shader) { Transform = { Position = new Vector3(16, 0, 0) } });
+        world.AddObject(new CorridorObject(shader) { Transform = { Position = new Vector3(20, 0, 0) } });
 
         return world;
     }
