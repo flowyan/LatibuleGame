@@ -27,14 +27,14 @@ public static class AssetManager
 
     public static void LoadAssets(ContentManager content, GraphicsDevice graphics)
     {
-        LoadTextures(content, graphics);
+        LoadTextures(content);
         LoadSounds(content);
         // LoadShaders(content);
 
         LatibuleGame.Fonts.AddFont(File.ReadAllBytes($"{Metadata.ASSETS_ROOT_DIRECTORY}/font/Jersey10.ttf"));
     }
 
-    private static void LoadTextures(ContentManager content, GraphicsDevice graphics)
+    private static void LoadTextures(ContentManager content)
     {
         var textureDir = new DirectoryInfo($"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_TEXTURE_PATH}");
         if (!textureDir.Exists) throw new Exception($"Missing texture directory: {textureDir.FullName}");
