@@ -6,12 +6,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FNA.Core", "FNA\FNA.Core.cs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FontStashSharp.FNA.Core", "FontStashSharp\src\XNA\FontStashSharp.FNA.Core.csproj", "{6D853944-8B2D-40DF-8913-F465121478ED}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nez.FNA.Core.ImGui", "Nez\Nez.ImGui\Nez.FNA.Core.ImGui.csproj", "{C86FE8BD-909B-403C-8A32-67D0D889E322}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nez.FNA.Core", "Nez\Nez.Portable\Nez.FNA.Core.csproj", "{5D9F1CA5-1800-4BCA-930F-326E668FC281}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nez.FNA.Core.Persistence", "Nez\Nez.Persistence\Nez.FNA.Core.Persistence.csproj", "{8AD13E39-CB36-4838-9222-3C050D89F5E3}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Release|x64 = Release|x64
@@ -30,17 +24,5 @@ Global
 		{6D853944-8B2D-40DF-8913-F465121478ED}.Release|x64.Build.0 = Release|Any CPU
 		{6D853944-8B2D-40DF-8913-F465121478ED}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{6D853944-8B2D-40DF-8913-F465121478ED}.Debug|x64.Build.0 = Debug|Any CPU
-		{C86FE8BD-909B-403C-8A32-67D0D889E322}.Release|x64.ActiveCfg = Release|Any CPU
-		{C86FE8BD-909B-403C-8A32-67D0D889E322}.Release|x64.Build.0 = Release|Any CPU
-		{C86FE8BD-909B-403C-8A32-67D0D889E322}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{C86FE8BD-909B-403C-8A32-67D0D889E322}.Debug|x64.Build.0 = Debug|Any CPU
-		{5D9F1CA5-1800-4BCA-930F-326E668FC281}.Release|x64.ActiveCfg = Release|Any CPU
-		{5D9F1CA5-1800-4BCA-930F-326E668FC281}.Release|x64.Build.0 = Release|Any CPU
-		{5D9F1CA5-1800-4BCA-930F-326E668FC281}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{5D9F1CA5-1800-4BCA-930F-326E668FC281}.Debug|x64.Build.0 = Debug|Any CPU
-		{8AD13E39-CB36-4838-9222-3C050D89F5E3}.Release|x64.ActiveCfg = Release|Any CPU
-		{8AD13E39-CB36-4838-9222-3C050D89F5E3}.Release|x64.Build.0 = Release|Any CPU
-		{8AD13E39-CB36-4838-9222-3C050D89F5E3}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{8AD13E39-CB36-4838-9222-3C050D89F5E3}.Debug|x64.Build.0 = Debug|Any CPU
 	EndGlobalSection
 EndGlobal
