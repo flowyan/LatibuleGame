@@ -1,10 +1,7 @@
 ﻿using System.Diagnostics;
 using Latibule.Core;
-using Latibule.Core.Components;
-using Latibule.Core.Data;
 using Latibule.Models;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using OpenTK.Mathematics;
 using Vector4 = System.Numerics.Vector4;
 
 namespace Latibule.Commands;
@@ -98,10 +95,10 @@ public class SvCheats : ICommand
 
         foreach (var gameWorldObject in LatibuleGame.GameWorld.Objects)
         {
-            gameWorldObject.Get<BasicEffectComponent>()?.Texture = AssetManager.GetTexture(TextureAsset.missing);
+            // gameWorldObject.Get<ShaderComponent>().Shader = AssetManager.GetTexture(TextureAsset.missing);
         }
 
-        AssetManager.PlaySound(SoundAsset.missing, randomPitch: false);
+        // AssetManager.PlaySound(SoundAsset.missing, randomPitch: false);
 
         // slowly writes the skull to the console
         foreach (var line in skull.Split("\n"))
@@ -109,7 +106,7 @@ public class SvCheats : ICommand
             LatibuleGame.Player.LookEnabled = false;
             GameStates.CurrentGui = new DevConsole();
             DevConsole.Log(new ConsoleMessage(line, ConsoleMessageType.CommandOutput, new Vector4(1, 0, 0, 1)));
-            LatibuleGame.Player.Camera.View *= Matrix.CreateRotationZ(MathHelper.ToRadians(5f));
+            LatibuleGame.Player.Camera.View *= Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(5f));
             await Task.Delay(50);
         }
 
@@ -129,10 +126,10 @@ public class SvCheats : ICommand
             "$xml = New-Object Windows.Data.Xml.Dom.XmlDocument; " +
             "$xml.LoadXml($toastXml.OuterXml); " +
             "$toast = [Windows.UI.Notifications.ToastNotification]::new($xml); " +
-            "$toast.Tag = \\\"Fish\\\"; " +
-            "$toast.Group = \\\"Fish\\\"; " +
+            "$toast.Tag = \\\"Latibule\\\"; " +
+            "$toast.Group = \\\"Latibule\\\"; " +
             "$toast.ExpirationTime = [DateTimeOffset]::Now.AddSeconds(5); " +
-            "$notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier(\\\"Fish\\\"); " +
+            "$notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier(\\\"Latibule\\\"); " +
             "$notifier.Show($toast);";
 
         var processStartInfo = new ProcessStartInfo
