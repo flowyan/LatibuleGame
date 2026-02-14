@@ -1,7 +1,11 @@
 ﻿using System.Numerics;
 using System.Reflection;
+using ImGuiNET;
 using Latibule.Core;
+using Latibule.Core.ImGuiNet;
 using Latibule.Models;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
 
 namespace Latibule.Services;
 
@@ -25,5 +29,26 @@ public static class DevConsoleService
             .ToList();
 
         Logger.LogInfo($"Loaded {DevConsole.ConsoleCommands.Count} console commands.");
+    }
+
+    public static void OnRenderFrame(FrameEventArgs args, IGLFWGraphicsContext context)
+    {
+        if (GameStates.CurrentGui is DevConsole)
+        {
+            ImguiImplOpenGL3.NewFrame();
+            ImguiImplOpenTK4.NewFrame();
+            ImGui.NewFrame();
+            // IMGUI HERE //
+            GameStates.CurrentGui?.OnRenderFrame(args);
+            // --------- //
+            ImGui.Render();
+            ImguiImplOpenGL3.RenderDrawData(ImGui.GetDrawData());
+            if (ImGui.GetIO().ConfigFlags.HasFlag(ImGuiConfigFlags.ViewportsEnable))
+            {
+                ImGui.UpdatePlatformWindows();
+                ImGui.RenderPlatformWindowsDefault();
+                context.MakeCurrent();
+            }
+        }
     }
 }
