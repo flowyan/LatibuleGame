@@ -1,25 +1,16 @@
 ﻿using Latibule.Core.ECS;
+using Latibule.Core.Rendering;
 using OpenTK.Windowing.Desktop;
 
 namespace Latibule.Core.Components;
 
-public sealed class ShaderComponent(GameWindow gameWindow) : BaseComponent(gameWindow)
+public sealed class ShaderComponent(GameWindow gameWindow, string vertPath, string fragPath) : BaseComponent(gameWindow)
 {
-    // public BasicEffect Effect { get; } = new(gameWindow.GraphicsDevice)
-    // {
-    //     TextureEnabled = true,
-    //     LightingEnabled = false,
-    // };
+    public Shader Shader { get; } = new(vertPath, fragPath);
 
-    // public Texture2D? Texture
-    // {
-    //     get => Effect.Texture;
-    //     set => Effect.Texture = value;
-    // }
-
-    // public override void Dispose()
-    // {
-    //     Effect.Dispose();
-    //     base.Dispose();
-    // }
+    public override void Dispose()
+    {
+        Shader.Dispose();
+        base.Dispose();
+    }
 }
