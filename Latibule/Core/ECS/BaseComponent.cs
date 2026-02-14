@@ -1,23 +1,26 @@
 ﻿using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
 
 namespace Latibule.Core.ECS;
 
-public abstract class BaseComponent()
+public abstract class BaseComponent : IComponent
 {
-    public virtual void OnLoad()
+    public GameObject Parent { get; set; }
+
+    public virtual void OnLoad(GameObject gameObject)
     {
+        Parent = gameObject;
     }
 
     public virtual void OnUpdateFrame(FrameEventArgs args)
     {
     }
 
-    public virtual void Dispose()
+    public virtual void OnRenderFrame(FrameEventArgs args)
     {
     }
 
-    public virtual void OnRenderFrame(FrameEventArgs args)
+    public virtual void Dispose()
     {
+        GC.SuppressFinalize(this);
     }
 }
