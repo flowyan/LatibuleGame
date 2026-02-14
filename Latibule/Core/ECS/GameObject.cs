@@ -1,33 +1,20 @@
-﻿using Latibule.Core.Physics;
-using OpenTK.Mathematics;
+﻿using Latibule.Core.Components;
 using OpenTK.Windowing.Common;
 
 namespace Latibule.Core.ECS;
 
 public class GameObject() : IDisposable
 {
-    public Vector3 Position { get; set; } = Vector3.Zero;
-
-    public Vector3 Rotation { get; set; } = Vector3.Zero;
-
-    public Vector3 Scale { get; set; } = Vector3.One;
-    public Vector2 UVScale { get; set; } = Vector2.One;
-    public GameObject? Parent { get; protected set; } = null;
+    public Transform Transform { get; set; } = new();
+    public GameObject? Parent { get; private set; }
     public GameObject[] Children { get; private set; } = Array.Empty<GameObject>();
 
-    /// <summary>
-    /// Whether this object participates in AABB collision detection with the player.
-    /// </summary>
-    public bool HasCollision { get; set; } = true;
+    private readonly Dictionary<Type, IComponent> _byType = new();
 
-    public BoundingBox BoundingBox { get; protected set; }
-
-    private readonly Dictionary<Type, BaseComponent> _byType = new();
-
-    public BaseComponent[] Components
+    public IComponent[] Components
     {
         get;
-        init
+        private set
         {
             field = value;
             _byType.Clear();
@@ -38,7 +25,7 @@ public class GameObject() : IDisposable
 
     public virtual void OnLoad()
     {
-        foreach (var component in Components) component.OnLoad();
+        foreach (var component in Components) component.OnLoad(this);
         foreach (var child in Children) child.OnLoad();
 
         LatibuleGame.GameWorld.AddObject(this);
@@ -77,9 +64,28 @@ public class GameObject() : IDisposable
         Children = Children.Concat(children).ToArray();
     }
 
-    public T? Get<T>() where T : BaseComponent
-        => _byType.TryGetValue(typeof(T), out var c) ? (T)c : null;
+    public GameObject WithComponent<T>(T component) where T : IComponent
+    {
+        component.Parent = this;
+        component.OnLoad(this);
+        _byType[typeof(T)] = component;
+        Components = _byType.Values.ToArray();
+        return this;
+    }
 
-    public T Require<T>() where T : BaseComponent
-        => Get<T>() ?? throw new InvalidOperationException($"Missing required component: {typeof(T).Name}");
+    public GameObject WithComponents(params IComponent[] components)
+    {
+        foreach (var component in components)
+        {
+            component.Parent = this;
+            component.OnLoad(this);
+            _byType[component.GetType()] = component;
+        }
+        Components = _byType.Values.ToArray();
+        return this;
+    }
+
+    public T? Get<T>() where T : IComponent => _byType.TryGetValue(typeof(T), out var c) ? (T)c : default;
+
+    public T Require<T>() where T : IComponent => Get<T>() ?? throw new InvalidOperationException($"Missing required component: {typeof(T).Name}");
 }
