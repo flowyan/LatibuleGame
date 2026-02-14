@@ -1,8 +1,6 @@
 ﻿using ImGuiNET;
 using Latibule.Models;
-using Latibule.Services;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
 using ICommand = Latibule.Models.ICommand;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
@@ -17,65 +15,51 @@ public class DevConsole : IGuiScreen
 
     private static string _command = "";
 
+    public void Initialize()
+    {
+    }
+
     public void Draw(GameTime gameTime)
     {
-        var ks = GameStates.KState;
-        var pks = GameStates.PreviousKState;
-
-        if (GameStates.CurrentGui is not DevConsole)
-        {
-            ImGui.SetWindowFocus();
-            _command = _command.Replace("`", "");
-            return;
-        }
-
-        if (ks.IsKeyDown(Keys.Escape) && !pks.IsKeyDown(Keys.Escape)) GameStateManager.SetUiOnScreen();
-
         var deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
         if (deltaTime <= 0) return;
 
-        LatibuleGame.ImGuiRenderer.BeforeLayout(gameTime);
-        ImGui.Begin("Dev Console",
-            ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoMove);
+        LatibuleGame.ImGuiRenderer.BeginLayout(gameTime);
+        ImGui.Begin("Dev Console", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings);
 
-        var x = ImGui.GetIO().DisplaySize.X / 2 - 500;
+        var sizeX = GameStates.Game.GraphicsDevice.Viewport.Width - 500;
+        var sizeY = GameStates.Game.GraphicsDevice.Viewport.Height - 200;
+        var x = ImGui.GetIO().DisplaySize.X / 2 - sizeX / 2;
+        var y = ImGui.GetIO().DisplaySize.Y / 2 - sizeY / 2;
 
-        ImGui.SetWindowPos(new Vector2(x, 50), ImGuiCond.Always);
-        ImGui.SetWindowSize(new Vector2(1000, GameStates.Game.Window.ClientBounds.Y - 150), ImGuiCond.Always);
+        ImGui.SetWindowPos(new Vector2(x, y), ImGuiCond.Always);
+        ImGui.SetWindowSize(new Vector2(sizeX, sizeY), ImGuiCond.Always);
         ImGui.SetWindowFocus();
 
         ImGui.BeginChild("##messages", new Vector2(0, -ImGui.GetFrameHeightWithSpacing()));
-        var id = 0;
-        foreach (var message in _messages)
-        {
-            ImGui.PushID(id++);
-            var textSize = ImGui.CalcTextSize(message.Content);
-            textSize.X = ImGui.GetWindowWidth();
-            textSize.Y += ImGui.GetStyle().FramePadding.Y * 1.25f;
-            var text = message.Content;
 
-            ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0, 0));
-            ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(0, 0, 0, 0));
-            ImGui.PushStyleColor(ImGuiCol.Text, message.Color);
+        var messages = string.Join("\n", _messages);
+        var textSize = ImGui.CalcTextSize(messages);
+        textSize.X = ImGui.GetWindowWidth();
+        textSize.Y += 5;
 
-            ImGui.InputTextMultiline(
-                "",
-                ref text,
-                (uint)text.Length + 1,
-                textSize,
-                ImGuiInputTextFlags.ReadOnly | ImGuiInputTextFlags.NoHorizontalScroll
-            );
+        ImGui.PushID(0);
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0, 0));
+        ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(0, 0, 0, 0));
+        ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1, 1, 1, 1));
 
-            // if (ImGui.IsItemHovered())
-            // {
-            //     ImGui.SetTooltip("fuck you lookin at");
-            // }
+        ImGui.InputTextMultiline(
+            "",
+            ref messages,
+            (uint)messages.Length + 1,
+            textSize,
+            ImGuiInputTextFlags.ReadOnly | ImGuiInputTextFlags.NoHorizontalScroll
+        );
 
-            ImGui.PopStyleColor();
-            ImGui.PopStyleColor();
-            ImGui.PopStyleVar();
-            ImGui.PopID();
-        }
+        ImGui.PopStyleColor();
+        ImGui.PopStyleColor();
+        ImGui.PopStyleVar();
+        ImGui.PopID();
 
         // Autoscroll
         if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY()) ImGui.SetScrollHereY(1);
@@ -94,7 +78,7 @@ public class DevConsole : IGuiScreen
         ImGui.PopStyleColor();
 
         ImGui.End();
-        LatibuleGame.ImGuiRenderer.AfterLayout();
+        LatibuleGame.ImGuiRenderer.EndLayout();
     }
 
     public static void Log(ConsoleMessage message) => _messages.Add(message);
