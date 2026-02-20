@@ -12,7 +12,7 @@ public class ReloadWorld : ICommand
 
     public Task Execute(string[] args)
     {
-        // LatibuleGame.GameWorld.Dispose();
+        LatibuleGame.UiTextRenderers.Clear();
         var player = LatibuleGame.Player;
         var noclip = LatibuleGame.Player.IsNoclip;
         LatibuleGame.GameWorld = new World();
