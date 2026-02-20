@@ -9,14 +9,11 @@ namespace Latibule.Core.Components;
 public class ShaderComponent(Shader shader) : BaseComponent
 {
     public Shader Shader { get; } = shader;
-    public Texture? Texture { get; init; }
-    public Vector2 UVScale { get; init; } = Vector2.One;
 
     public override void Dispose()
     {
         base.Dispose();
         Shader.Dispose();
-        Texture?.Dispose();
         GC.SuppressFinalize(this);
     }
 }
