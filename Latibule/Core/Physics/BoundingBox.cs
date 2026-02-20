@@ -4,7 +4,7 @@ using OpenTK.Mathematics;
 
 namespace Latibule.Core.Physics;
 
-public readonly struct BoundingBox : IEquatable<BoundingBox>
+public readonly struct BoundingBox : IBoundingShape, IEquatable<BoundingBox>
 {
     public Vector3 Min { get; }
     public Vector3 Max { get; }
