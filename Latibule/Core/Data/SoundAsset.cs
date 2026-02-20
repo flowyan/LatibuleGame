@@ -3,5 +3,7 @@
 public enum SoundAsset
 {
     missing,
-    tada
+    tada,
+    sleepphonk,
+    scarletfire,
 }
