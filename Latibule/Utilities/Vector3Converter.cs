@@ -1,4 +1,4 @@
-﻿namespace Latibule.Utilities;
+﻿﻿namespace Latibule.Utilities;
 
 public static class Vector3Converter
 {
@@ -10,5 +10,15 @@ public static class Vector3Converter
     public static System.Numerics.Vector3 ToNumerics(this OpenTK.Mathematics.Vector3 vector)
     {
         return new System.Numerics.Vector3(vector.X, vector.Y, vector.Z);
+    }
+
+    public static OpenTK.Mathematics.Vector2 ToOpenTK(this System.Numerics.Vector2 vector)
+    {
+        return new OpenTK.Mathematics.Vector2(vector.X, vector.Y);
+    }
+
+    public static System.Numerics.Vector2 ToNumerics(this OpenTK.Mathematics.Vector2 vector)
+    {
+        return new System.Numerics.Vector2(vector.X, vector.Y);
     }
 }
