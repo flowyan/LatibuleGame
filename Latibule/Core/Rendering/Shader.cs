@@ -1,107 +1,121 @@
-﻿using OpenTK.Graphics.OpenGL;
+﻿using System.Numerics;
+using Latibule.Core.Rendering.Helpers;
+using Latibule.Utilities;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
+using Vector3 = OpenTK.Mathematics.Vector3;
 
 namespace Latibule.Core.Rendering;
 
-public sealed class Shader
+public class Shader : IDisposable
 {
-    private readonly int Handle;
+    private readonly int _handle;
 
     public Shader(string vertexPath, string fragmentPath)
     {
-        string VertexShaderSource = File.ReadAllText(vertexPath);
+        var vertex = LoadShader(ShaderType.VertexShader, vertexPath);
+        var fragment = LoadShader(ShaderType.FragmentShader, fragmentPath);
 
-        string FragmentShaderSource = File.ReadAllText(fragmentPath);
+        _handle = GL.CreateProgram();
+        GLUtility.CheckError();
 
-        var VertexShader = GL.CreateShader(ShaderType.VertexShader);
-        GL.ShaderSource(VertexShader, VertexShaderSource);
+        GL.AttachShader(_handle, vertex);
+        GLUtility.CheckError();
 
-        var FragmentShader = GL.CreateShader(ShaderType.FragmentShader);
-        GL.ShaderSource(FragmentShader, FragmentShaderSource);
+        GL.AttachShader(_handle, fragment);
+        GLUtility.CheckError();
 
-        GL.CompileShader(VertexShader);
+        GL.LinkProgram(_handle);
+        GL.GetProgram(_handle, GetProgramParameterName.LinkStatus, out var status);
+        if (status == 0) throw new Exception($"Program failed to link with error: {GL.GetProgramInfoLog(_handle)}");
 
-        GL.GetShader(VertexShader, ShaderParameter.CompileStatus, out int vertexSuccess);
-        if (vertexSuccess == 0)
-        {
-            string infoLog = GL.GetShaderInfoLog(VertexShader);
-            Console.WriteLine(infoLog);
-        }
+        GL.DetachShader(_handle, vertex);
+        GL.DetachShader(_handle, fragment);
 
-        GL.CompileShader(FragmentShader);
-
-        GL.GetShader(FragmentShader, ShaderParameter.CompileStatus, out int fragmentSuccess);
-        if (fragmentSuccess == 0)
-        {
-            string infoLog = GL.GetShaderInfoLog(FragmentShader);
-            Console.WriteLine(infoLog);
-        }
-
-        Handle = GL.CreateProgram();
-
-        GL.AttachShader(Handle, VertexShader);
-        GL.AttachShader(Handle, FragmentShader);
-
-        GL.LinkProgram(Handle);
-
-        GL.GetProgram(Handle, GetProgramParameterName.LinkStatus, out int success);
-        if (success == 0)
-        {
-            string infoLog = GL.GetProgramInfoLog(Handle);
-            Console.WriteLine(infoLog);
-        }
-
-        GL.DetachShader(Handle, VertexShader);
-        GL.DetachShader(Handle, FragmentShader);
-        GL.DeleteShader(FragmentShader);
-        GL.DeleteShader(VertexShader);
-    }
-
-    public int GetAttribLocation(string attribName)
-    {
-        return GL.GetAttribLocation(Handle, attribName);
-    }
-
-    public void SetMatrix4(string name, Matrix4 data)
-    {
-        int location = GL.GetUniformLocation(Handle, name);
-        GL.UniformMatrix4(location, false, ref data);
-    }
-
-    public void SetInt(string name, int value)
-    {
-        int location = GL.GetUniformLocation(Handle, name);
-        GL.Uniform1(location, value);
+        GL.DeleteShader(vertex);
+        GL.DeleteShader(fragment);
     }
 
     public void Use()
     {
-        GL.UseProgram(Handle);
+        GL.UseProgram(_handle);
+        GLUtility.CheckError();
     }
 
-    private bool _disposedValue;
-
-    private void Dispose(bool _)
+    public void SetUniform(string name, int value)
     {
-        if (!_disposedValue)
-        {
-            GL.DeleteProgram(Handle);
-            _disposedValue = true;
-        }
+        var location = GL.GetUniformLocation(_handle, name);
+        if (location == -1) throw new Exception($"Uniform {name} not found in shader.");
+        GL.Uniform1(location, value);
+        GLUtility.CheckError();
     }
 
-    ~Shader()
+    public void SetUniform(string name, float value)
     {
-        if (!_disposedValue)
-        {
-            Console.WriteLine("GPU Resource leak! Did you forget to call Dispose()?");
-        }
+        var location = GL.GetUniformLocation(_handle, name);
+        if (location == -1) throw new Exception($"Uniform {name} not found in shader.");
+        GL.Uniform1(location, value);
+        GLUtility.CheckError();
     }
 
+    public unsafe void SetUniform(string name, Matrix4 value)
+    {
+        var location = GL.GetUniformLocation(_handle, name);
+        if (location == -1) throw new Exception($"{name} uniform not found on shader.");
+        GL.UniformMatrix4(location, 1, false, (float*)&value);
+        GLUtility.CheckError();
+    }
+
+    public unsafe void SetUniform(string name, Matrix4x4 value)
+    {
+        var location = GL.GetUniformLocation(_handle, name);
+        if (location == -1) throw new Exception($"{name} uniform not found on shader.");
+        GL.UniformMatrix4(location, 1, false, (float*)&value);
+        GLUtility.CheckError();
+    }
+
+    public void SetUniform(string name, Vector3 value)
+    {
+        var location = GL.GetUniformLocation(_handle, name);
+        if (location == -1) throw new Exception($"{name} uniform not found on shader.");
+        GL.Uniform3(location, value.X, value.Y, value.Z);
+        GLUtility.CheckError();
+    }
+
+    public int GetUniform(string name)
+    {
+        var location = GL.GetUniformLocation(_handle, name);
+        if (location == -1) throw new Exception($"{name} uniform not found on shader.");
+
+        GL.GetUniform(_handle, location, out int sexy);
+        return sexy;
+    }
+
+    public int GetAttribLocation(string attribName)
+    {
+        var result = GL.GetAttribLocation(_handle, attribName);
+        GLUtility.CheckError();
+        return result;
+    }
+
+    private static int LoadShader(ShaderType type, string path)
+    {
+        var src = File.ReadAllText(path);
+        var handle = GL.CreateShader(type);
+        GLUtility.CheckError();
+
+        GL.ShaderSource(handle, src);
+        GLUtility.CheckError();
+
+        GL.CompileShader(handle);
+        var infoLog = GL.GetShaderInfoLog(handle);
+        return !string.IsNullOrWhiteSpace(infoLog) ? throw new Exception($"Error compiling shader of type {type}, failed with error {infoLog}") : handle;
+    }
 
     public void Dispose()
     {
-        Dispose(true);
+        GL.DeleteProgram(_handle);
+        GLUtility.CheckError();
         GC.SuppressFinalize(this);
     }
 }
