@@ -7,7 +7,7 @@ namespace Latibule.Core.Gameplay;
 public class Camera
 {
     // Constants
-    private const float Fov = 70f; // Field of view in degrees
+    private const float Fov = 90f; // Field of view in degrees
     private const float NearPlaneDistance = 0.001f; // Near plane distance for projection matrix
     private const float FarPlaneDistance = 250f; // Far plane distance for projection matrix
 
