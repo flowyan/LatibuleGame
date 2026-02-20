@@ -154,7 +154,7 @@ public sealed class DebugUi3D : IDisposable
         // When passed to the shader (which is column-major), this becomes the correct MVP
         Matrix4 mvp = view * projection;
 
-        _lineShader.SetMatrix4("uMVP", mvp);
+        _lineShader.SetUniform("uMVP", mvp);
 
         // Set line width for visibility
         GL.LineWidth(LineWidth);
