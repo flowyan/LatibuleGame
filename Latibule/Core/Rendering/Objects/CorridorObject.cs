@@ -1,4 +1,5 @@
 ﻿using Latibule.Core.Components;
+using Latibule.Core.Data;
 using Latibule.Core.ECS;
 using Latibule.Core.Rendering.Models;
 using OpenTK.Mathematics;
@@ -11,17 +12,13 @@ public class CorridorObject(Shader shader) : GameObject()
     {
         var uvScale = new Vector2(1, 1);
 
-        var shaderComponent = new ShaderComponent(shader)
-        {
-            Texture = new Texture($"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_TEXTURE_PATH}/material/stone.jpg"),
-            UVScale = uvScale,
-        };
+        var component = new TextureComponent(Asseteer.GetTexture(TextureAsset.material_stone), uvScale);
 
         AddChildren([
-            PlaneMaker(CorridorFace.Floor).WithComponent(shaderComponent),
-            PlaneMaker(CorridorFace.Ceiling).WithComponent(shaderComponent),
-            PlaneMaker(CorridorFace.LeftWall).WithComponent(shaderComponent),
-            PlaneMaker(CorridorFace.RightWall).WithComponent(shaderComponent)
+            PlaneMaker(CorridorFace.Floor).WithComponent(component),
+            PlaneMaker(CorridorFace.Ceiling).WithComponent(component),
+            PlaneMaker(CorridorFace.LeftWall).WithComponent(component),
+            PlaneMaker(CorridorFace.RightWall).WithComponent(component)
         ]);
 
         base.OnLoad();
