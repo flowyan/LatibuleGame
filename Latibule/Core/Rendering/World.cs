@@ -2,6 +2,7 @@
 using Latibule.Core.ECS;
 using Latibule.Core.Physics;
 using Latibule.Entities;
+using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 
 namespace Latibule.Core.Rendering;
@@ -9,6 +10,8 @@ namespace Latibule.Core.Rendering;
 public class World
 {
     public List<GameObject> Objects { get; init; } = [];
+
+    public List<PointLight?> Lights { get; init; } = [];
 
     private BoundingBox[] _boundingBoxes = Array.Empty<BoundingBox>();
     private readonly Queue<GameObject> _pendingAdds = [];
@@ -30,6 +33,9 @@ public class World
         foreach (var obj in Objects) obj.OnUpdateFrame(args);
         _isIterating = false;
         ApplyDeferredOperations();
+
+        if (LatibuleGame.Player.Transform.Position.Y < -100)
+            LatibuleGame.Player.Transform.Position = new Vector3(LatibuleGame.Player.Transform.Position.X, 100, LatibuleGame.Player.Transform.Position.Z);
     }
 
     public void OnRenderFrame(FrameEventArgs args)
@@ -100,20 +106,10 @@ public class World
         return _boundingBoxes;
     }
 
-    /// <summary>
-    /// Returns bounding boxes only for objects that have collision enabled.
-    /// Used for player AABB collision detection.
-    /// </summary>
-    public BoundingBox[] GetCollidableBoxes()
+    public void AddPointLight(PointLight light)
     {
-        var collidables = Objects.Where(o => (bool)o.Get<CollisionComponent>()?.HasCollision).ToList();
-        var result = new BoundingBox[collidables.Count];
-        for (int i = 0; i < collidables.Count; i++)
-        {
-            var box = Objects[i].Get<CollisionComponent>()?.BoundingBox;
-            if (box != null) result[i] = box.Value;
-        }
-
-        return result;
+        // var currentAmount = Lights.Count(l => l is not null);
+        // if (currentAmount < GameOptions.MAX_POINT_LIGHTS) Lights[currentAmount] = light;
+        Lights.Add(light);
     }
 }
