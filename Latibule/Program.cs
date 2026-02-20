@@ -1,4 +1,5 @@
-﻿using OpenTK.Mathematics;
+﻿using Latibule.Core;
+using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Common.Input;
 using OpenTK.Windowing.Desktop;
@@ -11,7 +12,7 @@ public static class Program
     private static readonly NativeWindowSettings _windowSettings = new()
     {
         ClientSize = new Vector2i(1280, 720),
-        Title = "Latibule but OpenTK",
+        Title = $"{Metadata.GAME_NAME} {Metadata.GAME_VERSION}",
         Icon = LoadIcon("Assets/icon.jpg"),
         APIVersion = new Version(4, 6),
         Flags = ContextFlags.ForwardCompatible,
