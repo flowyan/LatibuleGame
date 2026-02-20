@@ -85,6 +85,21 @@ public class GameObject() : IDisposable
         return this;
     }
 
+    public GameObject UpdateComponent<T>(Action<T> updateAction) where T : IComponent
+    {
+        if (_byType.TryGetValue(typeof(T), out var c) && c is T component)
+        {
+            updateAction(component);
+            _byType[typeof(T)] = component; // Update the stored component
+            Components = _byType.Values.ToArray(); // Refresh the Components array
+        }
+        else
+        {
+            throw new InvalidOperationException($"Component of type {typeof(T).Name} not found.");
+        }
+        return this;
+    }
+
     public T? Get<T>() where T : IComponent => _byType.TryGetValue(typeof(T), out var c) ? (T)c : default;
 
     public T Require<T>() where T : IComponent => Get<T>() ?? throw new InvalidOperationException($"Missing required component: {typeof(T).Name}");
