@@ -101,9 +101,9 @@ public static class AabbHelper
     {
         // Build rotation matrix (rotation only!)
         var rot =
-            Matrix4.CreateRotationX(MathHelper.DegreesToRadians(rotationDegrees.X)) *
+            Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(rotationDegrees.Z)) *
             Matrix4.CreateRotationY(MathHelper.DegreesToRadians(rotationDegrees.Y)) *
-            Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(rotationDegrees.Z));
+            Matrix4.CreateRotationX(MathHelper.DegreesToRadians(rotationDegrees.X));
 
         // Absolute rotation matrix (ignore translation row/column)
         var absRot = new Matrix4(
@@ -124,5 +124,20 @@ public static class AabbHelper
             center - newHalfExtents,
             center + newHalfExtents
         );
+    }
+
+    /// <summary>
+    /// Creates a bounding sphere from center, half extents and rotation.
+    /// This creates a sphere that encompasses the rotated box.
+    /// </summary>
+    public static BoundingSphere CreateBoundingSphereFromCenterRotationScale(
+        Vector3 center,
+        Vector3 halfExtents,
+        Vector3 rotationDegrees)
+    {
+        // For a rotated box, the bounding sphere radius is the diagonal length
+        // since rotation doesn't change the distance from center to corners
+        float radius = halfExtents.Length;
+        return new BoundingSphere(center, radius);
     }
 }
