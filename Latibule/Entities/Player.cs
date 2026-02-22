@@ -79,9 +79,18 @@ public class Player : GameObject
         UpdateBoundingBox();
 
         // Bind inputs
-        Input.BindKeyPressed(Keys.R, () => Transform.Position = StartingCoords);
-        Input.BindKeyPressed(Keys.V, () => IsNoclip = !IsNoclip);
-        Input.BindKeyPressed(Keys.P, () => Punch(Camera.Direction, 10f));
+        Input.BindKeyPressed(Keys.R, () =>
+        {
+            Transform.Position = StartingCoords;
+            Velocity = Vector3.Zero;
+            UpdateBoundingBox();
+        });
+        Input.BindKeyPressed(Keys.V, () =>
+        {
+            IsNoclip = !IsNoclip;
+            Velocity = Vector3.Zero;
+        });
+        Input.BindKeyPressed(Keys.P, () => Punch(Camera.Direction, 15f));
     }
 
     public void UpdateBoundingBox()
@@ -194,18 +203,17 @@ public class Player : GameObject
         // }
     }
 
-    private Vector3 CalculateMovementInput(float deltaTime)
+    private void ApplyMovementInput(float deltaTime)
     {
-        if (CanMove == false)
+        if (!CanMove)
         {
-            // If movement is disabled, reset current movement
+            // If movement is disabled, reset current movement input
             CurrentMovement = Vector3.Zero;
-            return Vector3.Zero;
+            return;
         }
 
         // Calculate forward and right vectors for movement
-        var forward =
-            Vector3.Normalize(new Vector3(Camera.Direction.X, 0, Camera.Direction.Z)); // Ground-aligned forward
+        var forward = Vector3.Normalize(new Vector3(Camera.Direction.X, 0, Camera.Direction.Z));
         var right = Vector3.Normalize(Vector3.Cross(forward, Vector3Direction.Up));
 
         // Determine if movement keys are pressed
