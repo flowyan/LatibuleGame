@@ -11,5 +11,10 @@ public enum TextureAsset
     material_concrete,
 
     // MISC //
-    misc_tequila
+    misc_tequila,
+    misc_speaker,
+
+    // MAXWELL
+    maxwell_maxwell,
+    maxwell_whiskers,
 }
