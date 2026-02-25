@@ -8,11 +8,13 @@ namespace Latibule.Core;
 public static unsafe class SteamAudio
 {
     public const int SamplingRate = 44100;
-    public const int AudioFrameSize = 4096;
+    public const int AudioFrameSize = 512;
 
     private static IPL.Context iplContext;
     private static IPL.Hrtf iplHrtf;
     private static IPL.AudioSettings iplAudioSettings;
+
+    private static IPL.DistanceAttenuationModel _distanceModel;
 
     // listener state (simple; if you want orientation later we can add it)
     private static Vector3 _listenerPos;
@@ -42,7 +44,12 @@ public static unsafe class SteamAudio
 
         IPL.HrtfCreate(iplContext, in iplAudioSettings, in hrtfSettings, out iplHrtf);
 
-        Console.WriteLine("SteamAudio is ready.");
+        _distanceModel = new IPL.DistanceAttenuationModel
+        {
+            Type = IPL.DistanceAttenuationModelType.Default,
+        };
+
+        Logger.LogInfo("SteamAudio is ready!");
     }
 
     public static void UnloadSteamAudio()
@@ -53,12 +60,18 @@ public static unsafe class SteamAudio
 
     public sealed class Voice : IDisposable
     {
+        public IPL.DirectEffect Direct; // NEW
         public IPL.BinauralEffect Effect;
         public IPL.AudioBuffer Input; // mono
         public IPL.AudioBuffer Output; // stereo
 
         public Voice()
         {
+            // Direct effect (mono->mono)
+            var directSettings = new IPL.DirectEffectSettings { NumChannels = 1 };
+            IPL.DirectEffectCreate(iplContext, in iplAudioSettings, in directSettings, out Direct);
+
+            // Binaural effect (mono->stereo)
             var binauralEffectSettings = new IPL.BinauralEffectSettings { Hrtf = iplHrtf };
             IPL.BinauralEffectCreate(iplContext, in iplAudioSettings, in binauralEffectSettings, out Effect);
 
@@ -71,44 +84,71 @@ public static unsafe class SteamAudio
             IPL.AudioBufferFree(iplContext, ref Input);
             IPL.AudioBufferFree(iplContext, ref Output);
             IPL.BinauralEffectRelease(ref Effect);
+            IPL.DirectEffectRelease(ref Direct); // NEW
         }
     }
 
-    public static Voice CreateVoice() => new Voice();
+    public static Voice CreateVoice() => new();
 
-    // Writes interleaved stereo float samples (L,R,L,R...) into dest (length = AudioFrameSize*2)
-    public static void ProcessFrame(Voice voice, float* monoIn, Vector3 sourceWorldPos, float* interleavedStereoOut)
+    public static void ProcessFrame(
+        Voice voice,
+        float* monoIn,
+        Vector3 sourceWorldPos,
+        float* interleavedStereoOut)
     {
-        // copy mono into steam input channel 0
+        // Copy mono input (channel 0)
         float* inputCh0 = ((float**)voice.Input.Data)[0];
+
         for (int i = 0; i < AudioFrameSize; i++)
             inputCh0[i] = monoIn[i];
 
-        var dirWorld = sourceWorldPos - _listenerPos;
-        if (dirWorld.LengthSquared < 1e-8f) dirWorld = _listenerForward;
-        else dirWorld = Vector3.Normalize(dirWorld);
+        // --- Distance attenuation (Steam Audio) ---
+        float distanceAttenuation = IPL.DistanceAttenuationCalculate(
+            iplContext,
+            new IPL.Vector3(sourceWorldPos.X, sourceWorldPos.Y, sourceWorldPos.Z),
+            new IPL.Vector3(_listenerPos.X, _listenerPos.Y, _listenerPos.Z),
+            _distanceModel);
 
-// Listener basis
+        // Apply DirectEffect (mono -> mono) in-place
+        var directParams = new IPL.DirectEffectParams
+        {
+            Flags = IPL.DirectEffectFlags.ApplyDistanceAttenuation,
+            DistanceAttenuation = distanceAttenuation
+        };
+
+        IPL.DirectEffectApply(voice.Direct, ref directParams, ref voice.Input, ref voice.Input);
+
+        // Compute direction to listener
+        var dirWorld = sourceWorldPos - _listenerPos;
+
+        if (dirWorld.LengthSquared < 1e-8f)
+            dirWorld = _listenerForward;
+        else
+            dirWorld = Vector3.Normalize(dirWorld);
+
+        // Build orthonormal listener basis
         var f = _listenerForward;
         var u = _listenerUp;
 
-// Make u orthogonal to f (important if you pass UnitY always)
+        // Make up orthogonal to forward
         u = Vector3.Normalize(u - f * Vector3.Dot(u, f));
 
-        var r = Vector3.Normalize(Vector3.Cross(f, u)); // right
-// recompute u to be perfectly orthonormal
+        var r = Vector3.Normalize(Vector3.Cross(f, u));
         u = Vector3.Normalize(Vector3.Cross(r, f));
 
-// Convert world direction into listener-local coordinates
+        // Convert to listener-local space
         var dirLocal = new Vector3(
-            Vector3.Dot(dirWorld, r),
-            Vector3.Dot(dirWorld, u),
-            Vector3.Dot(dirWorld, f)
+            Vector3.Dot(dirWorld, r), // right
+            Vector3.Dot(dirWorld, u), // up
+            Vector3.Dot(dirWorld, f) // forward
         );
 
-        if (dirLocal.LengthSquared < 1e-8f) dirLocal = new Vector3(0, 0, 1);
-        else dirLocal = Vector3.Normalize(dirLocal);
+        if (dirLocal.LengthSquared < 1e-8f)
+            dirLocal = new Vector3(0, 0, 1);
+        else
+            dirLocal = Vector3.Normalize(dirLocal);
 
+        // Apply binaural (always stereo)
         var p = new IPL.BinauralEffectParams
         {
             Hrtf = iplHrtf,
@@ -118,9 +158,16 @@ public static unsafe class SteamAudio
             PeakDelays = IntPtr.Zero
         };
 
-        IPL.BinauralEffectApply(voice.Effect, ref p, ref voice.Input, ref voice.Output);
+        IPL.BinauralEffectApply(
+            voice.Effect,
+            ref p,
+            ref voice.Input,
+            ref voice.Output);
 
-        // deinterleaved -> interleaved
-        IPL.AudioBufferInterleave(iplContext, in voice.Output, in Unsafe.AsRef<float>(interleavedStereoOut));
+        // Deinterleaved -> Interleaved stereo
+        IPL.AudioBufferInterleave(
+            iplContext,
+            in voice.Output,
+            in Unsafe.AsRef<float>(interleavedStereoOut));
     }
 }
