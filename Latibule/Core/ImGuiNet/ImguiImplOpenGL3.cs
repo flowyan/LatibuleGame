@@ -132,7 +132,7 @@ namespace Latibule.Core.ImGuiNet
             Matrix4 mvp = Matrix4.CreateOrthographicOffCenter(L, R, B, T, -1, 1);
             GL.UseProgram(bd->ShaderHandle);
             GL.Uniform1(bd->UniformLocationTex, 0);
-            GL.UniformMatrix4(bd->UniformLocationProjMtx, true, ref mvp);
+            GL.UniformMatrix4(bd->UniformLocationProjMtx, false, ref mvp);
 
             GL.BindSampler(0, 0);
 
@@ -341,7 +341,7 @@ namespace Latibule.Core.ImGuiNet
             int last_texture = GL.GetInteger(GetPName.TextureBinding2D);
             int last_array_buffer = GL.GetInteger(GetPName.ArrayBufferBinding);
             int last_pixel_unpack_buffer = GL.GetInteger(GetPName.PixelUnpackBufferBinding);
-            int last_vertex_array = GL.GetInteger(GetPName.VertexArray);
+            int last_vertex_array = GL.GetInteger(GetPName.VertexArrayBinding);
 
             string vertex_shader_glsl_120 =
                 """
@@ -355,7 +355,7 @@ namespace Latibule.Core.ImGuiNet
                 {
                     Frag_UV = UV;
                     Frag_Color = Color;
-                    gl_Position = vec4(Position.xy,0,1) * ProjMtx;
+                    gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
                 }
                 """;
 
@@ -371,7 +371,7 @@ namespace Latibule.Core.ImGuiNet
                 {
                     Frag_UV = UV;
                     Frag_Color = Color;
-                    gl_Position = vec4(Position.xy,0,1) * ProjMtx;
+                    gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
                 }
                 """;
 
@@ -388,7 +388,7 @@ namespace Latibule.Core.ImGuiNet
                 {
                     Frag_UV = UV;
                     Frag_Color = Color;
-                    gl_Position = vec4(Position.xy,0,1) * ProjMtx;
+                    gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
                 }
                 """;
 
@@ -404,7 +404,7 @@ namespace Latibule.Core.ImGuiNet
                 {
                     Frag_UV = UV;
                     Frag_Color = Color;
-                    gl_Position = vec4(Position.xy,0,1) * ProjMtx;
+                    gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
                 }
                 """;
 
@@ -564,7 +564,7 @@ namespace Latibule.Core.ImGuiNet
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         static void Renderer_RenderWindow(ImGuiViewportPtr viewport)
         {
-            if (viewport.Flags.HasFlag(ImGuiViewportFlags.NoRendererClear))
+            if (!viewport.Flags.HasFlag(ImGuiViewportFlags.NoRendererClear))
             {
                 GL.ClearColor(Color4.Black);
                 GL.Clear(ClearBufferMask.ColorBufferBit);
