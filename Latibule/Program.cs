@@ -4,6 +4,7 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Common.Input;
 using OpenTK.Windowing.Desktop;
 using SixLabors.ImageSharp.PixelFormats;
+using Image = OpenTK.Windowing.Common.Input.Image;
 
 namespace Latibule;
 
@@ -14,8 +15,10 @@ public static class Program
         ClientSize = new Vector2i(1280, 720),
         Title = $"{Metadata.GAME_NAME} {Metadata.GAME_VERSION}",
         Icon = LoadIcon("Assets/icon.jpg"),
-        APIVersion = new Version(4, 6),
-        Flags = ContextFlags.ForwardCompatible,
+        APIVersion = new Version(4, 1),
+        Flags = ContextFlags.ForwardCompatible | ContextFlags.Debug,
+        Profile = ContextProfile.Core,
+        Vsync = VSyncMode.Off,
     };
 
     private static WindowIcon LoadIcon(string path)
