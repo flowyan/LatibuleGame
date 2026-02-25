@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using OpenTK.Mathematics;
+﻿using OpenTK.Mathematics;
 
 namespace Latibule.Core.Physics;
 
@@ -145,8 +143,8 @@ public readonly struct BoundingBox : IBoundingShape, IEquatable<BoundingBox>
     // XNA corner order
     public Vector3[] GetCorners()
     {
-        return new[]
-        {
+        return
+        [
             new Vector3(Min.X, Max.Y, Max.Z),
             new Vector3(Max.X, Max.Y, Max.Z),
             new Vector3(Max.X, Min.Y, Max.Z),
@@ -154,23 +152,8 @@ public readonly struct BoundingBox : IBoundingShape, IEquatable<BoundingBox>
             new Vector3(Min.X, Max.Y, Min.Z),
             new Vector3(Max.X, Max.Y, Min.Z),
             new Vector3(Max.X, Min.Y, Min.Z),
-            new Vector3(Min.X, Min.Y, Min.Z),
-        };
-    }
-
-    public void GetCorners(Vector3[] corners)
-    {
-        if (corners is null) throw new ArgumentNullException(nameof(corners));
-        if (corners.Length < 8) throw new ArgumentException("Array must contain at least 8 elements.", nameof(corners));
-
-        corners[0] = new Vector3(Min.X, Max.Y, Max.Z);
-        corners[1] = new Vector3(Max.X, Max.Y, Max.Z);
-        corners[2] = new Vector3(Max.X, Min.Y, Max.Z);
-        corners[3] = new Vector3(Min.X, Min.Y, Max.Z);
-        corners[4] = new Vector3(Min.X, Max.Y, Min.Z);
-        corners[5] = new Vector3(Max.X, Max.Y, Min.Z);
-        corners[6] = new Vector3(Max.X, Min.Y, Min.Z);
-        corners[7] = new Vector3(Min.X, Min.Y, Min.Z);
+            new Vector3(Min.X, Min.Y, Min.Z)
+        ];
     }
 
     public static BoundingBox CreateFromPoints(IEnumerable<Vector3> points)
