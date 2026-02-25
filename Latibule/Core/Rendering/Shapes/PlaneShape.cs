@@ -16,8 +16,8 @@ public class PlaneShape : Shape
 
         Indices =
         [
-            0, 1, 2, // first triangle
-            1, 3, 2 // second triangle
+            0, 2, 1,
+            2, 3, 1
         ];
 
         Normals =

@@ -73,14 +73,14 @@ class IsoSphere : Shape
                 uint bottomRight = bottomLeft + 1;
 
                 // First triangle (top-left, bottom-left, top-right)
-                Indices[index++] = topLeft;
-                Indices[index++] = bottomLeft;
                 Indices[index++] = topRight;
+                Indices[index++] = bottomLeft;
+                Indices[index++] = topLeft;
 
                 // Second triangle (top-right, bottom-left, bottom-right)
-                Indices[index++] = topRight;
-                Indices[index++] = bottomLeft;
                 Indices[index++] = bottomRight;
+                Indices[index++] = bottomLeft;
+                Indices[index++] = topRight;
             }
         }
     }
