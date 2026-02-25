@@ -75,7 +75,7 @@ public static class TestWorld
 
         world.AddObject(new GameObject { Transform = { Position = new Vector3(0, 0.5f, 7.5f) } }.WithComponents(
             new ShaderComponent(shader),
-            new MeshRendererComponent(Asseteer.GetModel(ModelAsset.maxwell)),
+            new ModelRendererComponent(Asseteer.GetModel(ModelAsset.maxwell)),
             new CollisionComponent(scale: new Vector3(0.7f, 0.4f, 0.5f)),
             new TextureComponent(Asseteer.GetTextures([TextureAsset.maxwell_maxwell, TextureAsset.maxwell_whiskers]))
         ));
