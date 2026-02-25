@@ -1,4 +1,5 @@
 ﻿using Latibule.Core.Components;
+using Latibule.Core.Rendering;
 using OpenTK.Windowing.Common;
 
 namespace Latibule.Core.ECS;
@@ -37,10 +38,12 @@ public class GameObject() : IDisposable
         foreach (var child in Children) child.OnUpdateFrame(args);
     }
 
-    public virtual void OnRenderFrame(FrameEventArgs args)
+    public virtual void OnRenderFrame(FrameEventArgs args, RenderLayer layer)
     {
-        foreach (var component in Components) component.OnRenderFrame(args);
-        foreach (var child in Children) child.OnRenderFrame(args);
+        foreach (var component in Components)
+            if (component.RenderLayer == layer)
+                component.OnRenderFrame(args);
+        foreach (var child in Children) child.OnRenderFrame(args, layer);
     }
 
     public virtual void Dispose()
@@ -81,6 +84,7 @@ public class GameObject() : IDisposable
             component.OnLoad(this);
             _byType[component.GetType()] = component;
         }
+
         Components = _byType.Values.ToArray();
         return this;
     }
@@ -97,6 +101,7 @@ public class GameObject() : IDisposable
         {
             throw new InvalidOperationException($"Component of type {typeof(T).Name} not found.");
         }
+
         return this;
     }
 
