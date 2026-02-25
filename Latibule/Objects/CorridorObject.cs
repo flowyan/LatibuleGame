@@ -1,7 +1,6 @@
 ﻿using Latibule.Core.Components;
 using Latibule.Core.Data;
 using Latibule.Core.ECS;
-using Latibule.Core.Rendering.Models;
 using OpenTK.Mathematics;
 
 namespace Latibule.Core.Rendering.Objects;
