@@ -11,8 +11,6 @@ namespace Latibule.Services;
 
 public static class GameStateManager
 {
-    private static Action<char>? _textInputHandler;
-
     public static void Initialize(GameWindow gameWindow)
     {
         GameStates.Initialize(gameWindow);
@@ -26,10 +24,15 @@ public static class GameStateManager
             Keys.LeftShift
         );
         Input.BindKeyPressed(Keys.F1, () => GameStates.ShowHud = !GameStates.ShowHud);
-        // if (Input.IsKeyPressedNow(Keys.F3)) LatibuleGame.DebugUi.ShowDebug = !LatibuleGame.DebugUi.ShowDebug;
+        Input.BindKeyPressed(Keys.F3, () => LatibuleGame.DebugUi.ShowDebug = !LatibuleGame.DebugUi.ShowDebug);
         Input.BindComboPressed(
             Keys.B,
             () => LatibuleGame.DebugUi3d.ShowBoundingBoxes = !LatibuleGame.DebugUi3d.ShowBoundingBoxes,
+            Keys.F3
+        );
+        Input.BindComboPressed(
+            Keys.L,
+            () => LatibuleGame.DebugUi3d.ShowPointLights = !LatibuleGame.DebugUi3d.ShowPointLights,
             Keys.F3
         );
         Input.BindKeyPressed(Keys.F5, () => new ReloadWorld().Execute([]));
@@ -44,6 +47,11 @@ public static class GameStateManager
         {
             if (GameStates.CurrentGui != null) SetUiOnScreen();
         });
+    }
+
+    public static void Update(GameWindow gameWindow)
+    {
+        GameStates.GameWindow = gameWindow;
     }
 
     public static void SetUiOnScreen(IGuiScreen? gui = null, bool imgui = false)
@@ -67,21 +75,4 @@ public static class GameStateManager
             GameStates.CurrentGui = gui;
         }
     }
-
-    // private static void ImGuiStartTextInput()
-    // {
-    //     if (_textInputHandler != null) return;
-    //
-    //     var io = ImGui.GetIO();
-    //     _textInputHandler = c => LatibuleGame.ImGuiRenderer.OnTextInput(c, io);
-    //     // TextInputEXT.TextInput += _textInputHandler;
-    // }
-    //
-    // private static void ImGuiStopTextInput()
-    // {
-    //     if (_textInputHandler == null) return;
-    //
-    //     // TextInputEXT.TextInput -= _textInputHandler;
-    //     _textInputHandler = null;
-    // }
 }
