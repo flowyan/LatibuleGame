@@ -32,7 +32,6 @@ public class DevConsole : IGuiScreen
 
         ImGui.SetWindowPos(new Vector2(x, y), ImGuiCond.Appearing);
         ImGui.SetWindowSize(new Vector2(sizeX, sizeY), ImGuiCond.Once);
-        ImGui.SetWindowFocus();
 
         ImGui.BeginChild("##messages", new Vector2(0, -ImGui.GetFrameHeightWithSpacing()));
 
@@ -63,7 +62,6 @@ public class DevConsole : IGuiScreen
         if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY()) ImGui.SetScrollHereY(1);
 
         ImGui.EndChild();
-        if (ImGui.IsWindowAppearing()) ImGui.SetKeyboardFocusHere();
         if (ImGui.IsKeyPressed(ImGuiKey.Enter)) ImGui.SetKeyboardFocusHere();
         if (ImGui.IsKeyPressed(ImGuiKey.GraveAccent)) ImGui.SetKeyboardFocusHere();
 
