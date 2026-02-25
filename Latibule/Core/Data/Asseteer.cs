@@ -1,5 +1,9 @@
-﻿using Latibule.Core.Audio;
+﻿using Assimp;
+using Assimp.Configs;
+using FontStashSharp;
+using Latibule.Core.Audio;
 using Latibule.Core.Rendering;
+using Latibule.Core.Rendering.Text;
 using NAudio.Vorbis;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
@@ -18,10 +22,18 @@ public static class Asseteer
     // public static readonly Dictionary<string, Effect> Shaders = [];
 
     // keyed by texture path
-    private static readonly Dictionary<string, Texture> LoadedTextures = new();
-    // public static readonly Dictionary<string, IntPtr> LoadedImGuiTextures = new();
+    private static readonly Dictionary<string, Texture> LoadedTextures = [];
+    // public static readonly Dictionary<string, IntPtr> LoadedImGuiTextures = [];
 
-    public static readonly Dictionary<string, WaveStream> LoadedSoundsList = [];
+    private static readonly Dictionary<string, WaveStream> LoadedSoundsList = [];
+
+    private static readonly Dictionary<string, Scene> LoadedModels = [];
+
+    public static FontStashRenderer FontRenderer = new();
+    public static FontSystem FontSystem = new();
+    public static int FontSize = 32;
+
+    public static AssimpContext AssimpContext = new();
 
     private const float PitchMin = -0.2f;
     private const float PitchMax = 0.2f;
@@ -30,11 +42,12 @@ public static class Asseteer
     {
         LoadTextures();
         LoadSounds();
+        LoadFonts();
+        LoadModels();
         // LoadShaders(content);
-
-        // LatibuleGame.Fonts.AddFont(File.ReadAllBytes($"{Metadata.ASSETS_ROOT_DIRECTORY}/font/Jersey10.ttf"));
     }
 
+    // TODO: add support for subsubfolders so stuff like model_modelname_texture1 can work with TextureAsset
     private static void LoadTextures()
     {
         var textureDir = new DirectoryInfo($"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_TEXTURE_PATH}");
@@ -71,6 +84,7 @@ public static class Asseteer
             var soundPath = $"{dirPath}/{file.Name}";
             try
             {
+                // todo: dont load readers, load smthing else cuz issues with looping and playback
                 LoadedSoundsList[soundName] = extension switch
                 {
                     ".ogg" => new VorbisWaveReader(soundPath),
@@ -93,12 +107,80 @@ public static class Asseteer
         return LoadedTextures[textureName];
     }
 
+    public static Texture[] GetTextures(TextureAsset[] textureAssets)
+    {
+        var textureNames = textureAssets.Select(x => x.ToString().ToLower().Replace("_", "/"));
+        return LoadedTextures.Where(x => textureNames.Contains(x.Key)).Select(x => x.Value).ToArray();
+    }
+
+    private static void LoadFonts()
+    {
+        // Set up all the default font things
+        FontRenderer = new FontStashRenderer();
+
+        // TODO: go through the folder and add the fonts recursively
+        FontSystem = new FontSystem(new FontSystemSettings
+        {
+            FontResolutionFactor = 4,
+            KernelWidth = 2,
+            KernelHeight = 2,
+        });
+        FontSystem.AddFont(File.ReadAllBytes(@"Assets/font/Jersey10.ttf"));
+    }
+
+    private static void LoadModels()
+    {
+        AssimpContext.SetConfig(new NormalSmoothingAngleConfig(66.0f));
+
+        const PostProcessSteps flags = PostProcessSteps.Triangulate |
+                                       PostProcessSteps.JoinIdenticalVertices |
+                                       PostProcessSteps.CalculateTangentSpace |
+                                       PostProcessSteps.GenerateNormals |
+                                       PostProcessSteps.FlipUVs;
+
+        const string dirPath = $"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_MODEL_PATH}";
+        var modelDir = new DirectoryInfo(dirPath);
+        if (!modelDir.Exists) throw new Exception($"Missing model directory: {modelDir.FullName}");
+
+        foreach (var file in modelDir.EnumerateFiles())
+        {
+            var extension = file.Extension;
+            var modelName = file.Name.Replace(extension, "");
+            var modelPath = $"{dirPath}/{file.Name}";
+            try
+            {
+                LoadedModels[modelName] = AssimpContext.ImportFile(modelPath, flags);
+
+                LogInfo($"Loaded model: {modelName} ({file.Name})");
+            }
+            catch (Exception e)
+            {
+                LogError($"Failed to load model: {modelName} ({file.Name}) - {e}");
+            }
+        }
+    }
+
+    public static Scene GetModel(ModelAsset modelAsset)
+    {
+        var modelName = modelAsset.ToString().ToLower().Replace("_", "/");
+        return LoadedModels[modelName];
+    }
+
     public static void PlaySound(SoundAsset soundAsset, float volume = 0.5f, bool randomPitch = true)
     {
         var outputDevice = new WaveOutEvent();
         var soundName = soundAsset.ToString().ToLower();
         var sound = LoadedSoundsList[soundName];
+        // var loopStream = new LoopStream(sound);
         // sound.Pitch = randomPitch ? (float)(new Random().NextDouble() * (PitchMax - PitchMin) + PitchMin) : 0;
+
+        outputDevice.PlaybackStopped += (sender, args) =>
+        {
+            outputDevice.Dispose();
+            sound.Position = 0;
+            outputDevice = new WaveOutEvent();
+        };
+
         outputDevice.Init(sound);
         outputDevice.Volume = volume;
         outputDevice.Play();
@@ -108,30 +190,27 @@ public static class Asseteer
     {
         var soundName = soundAsset.ToString().ToLower();
         var stream = LoadedSoundsList[soundName];
-        ISampleProvider sp = stream.ToSampleProvider();
+        var sp = stream.ToSampleProvider();
 
-        if (sp.WaveFormat.SampleRate != Core.SteamAudio.SamplingRate)
-            sp = new WdlResamplingSampleProvider(sp, Core.SteamAudio.SamplingRate);
-
-        // ensure mono for steam audio
-        if (sp.WaveFormat.Channels == 2)
-        {
-            sp = new StereoToMonoSampleProvider(sp) { LeftVolume = 0.5f, RightVolume = 0.5f };
-        }
-        else if (sp.WaveFormat.Channels != 1)
-        {
-            stream.Dispose();
-            throw new NotSupportedException($"Only mono/stereo supported. Got {sp.WaveFormat.Channels} channels.");
-        }
+        if (sp.WaveFormat.SampleRate != SteamAudio.SamplingRate)
+            sp = new WdlResamplingSampleProvider(sp, SteamAudio.SamplingRate);
 
         var spatial = new SteamAudioSampleProvider(sp, soundPosition, volume);
 
-// Most reliable output path:
-        IWaveProvider waveProvider = new SampleToWaveProvider16(spatial);
+        // Most reliable output path:
+        IWaveProvider waveProvider = new SampleToWaveProvider24(spatial);
 
-        var output = new WaveOutEvent();
-        output.Init(waveProvider);
-        output.Volume = 1.0f;
-        output.Play();
+        var device = new NAudio.CoreAudioApi.MMDeviceEnumerator()
+            .GetDefaultAudioEndpoint(NAudio.CoreAudioApi.DataFlow.Render, NAudio.CoreAudioApi.Role.Multimedia);
+
+        // TODO: switch to something crossplatform, probably OpenAL teehee
+        var outDevice = new WasapiOut(device,
+            NAudio.CoreAudioApi.AudioClientShareMode.Shared,
+            true,
+            latency: 30);
+
+        outDevice.Init(waveProvider);
+        outDevice.Volume = volume;
+        outDevice.Play();
     }
 }
