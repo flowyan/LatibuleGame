@@ -1,4 +1,5 @@
 using Latibule.Core;
+using Latibule.Core.Data;
 using Latibule.Core.ECS;
 using Latibule.Core.Gameplay;
 using Latibule.Core.Physics;
@@ -26,34 +27,31 @@ public class Player : GameObject
     public PlayerPhysics Physics { get; private set; }
     public BoundingBox BoundingBox { get; private set; }
 
-    // Add player dimensions
+    // Player dimensions
     private const float Width = 0.6f;
     private const float Height = 1.8f;
     private const float HeightSneak = 1.6f; // Height when sneaking
     private const float Depth = 0.6f;
 
-    private const float ReachDistance = 5f;
-
-
     // Movement properties
-    private float _moveSpeed = 4f; // Speed of player movement
+    private float _moveSpeed = 6f; // Speed of player movement
     private float _sneakSpeed = 1f; // Speed of player movement when sneaking
-    private float _inertia = 0.8f;
-    private float _airMultiplier = 0.8f;
-    public Vector3 CurrentMovement { get; private set; } = Vector3.Zero;
+    private float _acceleration = 60f; // How fast we accelerate to target speed
+    private float _friction = 8f; // Ground friction when no input
+    private float _airMultiplier = 0.9f; // Air control multiplier
+    public Vector3 CurrentMovementInput { get; private set; } = Vector3.Zero; // Current input direction
     public bool IsGrounded { get; set; }
     public static bool IsSneaking;
     private bool _isMovementPressed;
 
     // Gravity and jump properties
-    private float _gravity = 0.5f;
+    private float _gravity = 50f;
     public Vector3 Velocity = Vector3.Zero;
-    private float _velocityLimit = 0.5f;
-    private float _jumpForce = 15f;
+    internal float MaxVelocity = 50f;
+    private float _jumpForce = 10f;
 
-    // Add a cooldown timer for jump
     private float _jumpCooldown;
-    private float _jumpCooldownTime = 0.3f;
+    private float _jumpCooldownTime = 0.4f;
 
     public Vector3 EyePosition =>
         RawPosition + new Vector3(0, IsSneaking ? Camera.EyeHeightOffsetSneak : Camera.EyeHeightOffset, 0);
@@ -135,11 +133,6 @@ public class Player : GameObject
         // Update the hit result for the current frame
         PushBackIfAtWorldEdge();
 
-        if (Velocity.Length >= _velocityLimit || Velocity.LengthSquared <= -_velocityLimit)
-        {
-            // Limit the velocity to prevent excessive speed
-            Velocity = Vector3.Normalize(Velocity) * _velocityLimit;
-        }
 
         var ms = GameStates.MState;
 
@@ -149,9 +142,6 @@ public class Player : GameObject
         if (ms.WasButtonDown(MouseButton.Right) && ms.IsButtonReleased(MouseButton.Right)) Controls.ResetCooldown();
         if (Input.IsKeyDown(Keys.LeftShift) || Input.IsKeyDown(Keys.LeftControl)) IsSneaking = true;
         else IsSneaking = false;
-
-        // Calculate the desired horizontal movement based on input
-        var desiredMovement = CalculateMovementInput(deltaTime);
 
         if (IsNoclip)
         {
@@ -174,18 +164,25 @@ public class Player : GameObject
             return;
         }
 
-        // Apply gravity to velocity
+        // Apply movement input to horizontal velocity
+        ApplyMovementInput(deltaTime);
+
+        // Apply gravity to vertical velocity
         ApplyGravity(deltaTime);
 
         // Handle jumping input (only sets velocity, doesn't move yet)
         HandleJumpInput(deltaTime);
 
-        // Calculate the total displacement vector for this frame
-        var displacement = CalculateDisplacement(desiredMovement);
+        // Apply friction/drag to velocity
+        ApplyFriction(deltaTime);
+
+        // Clamp horizontal velocity to maximum speed
+        ClampVelocity();
+
+        // Calculate the total displacement from velocity
+        var displacement = Velocity * deltaTime;
 
         // Predict and resolve collisions, updating position and physics state
-
-        // If no collision objects, just apply the displacement directly
         if (CollisionEnabled) HandleCollisions(displacement, deltaTime);
         else RawPosition += displacement;
 
@@ -208,7 +205,7 @@ public class Player : GameObject
         if (!CanMove)
         {
             // If movement is disabled, reset current movement input
-            CurrentMovement = Vector3.Zero;
+            CurrentMovementInput = Vector3.Zero;
             return;
         }
 
@@ -232,54 +229,76 @@ public class Player : GameObject
         // Normalize the input if it's non-zero
         if (analogMove != Vector2.Zero) analogMove = Vector2.Normalize(analogMove);
 
-        // Create target movement vector
-        var targetMovement = Vector3.Zero;
-
+        // Create target movement direction
+        Vector3 inputDirection = Vector3.Zero;
         if (_isMovementPressed)
         {
-            // Create movement vector from input direction
-            targetMovement = right * analogMove.X + forward * analogMove.Y;
-
-            // Normalize and scale by move speed if the vector is non-zero
-            if (targetMovement != Vector3.Zero)
-            {
-                var speed = IsSneaking ? _sneakSpeed : _moveSpeed;
-                targetMovement = Vector3.Normalize(targetMovement) * speed;
-
-                // Apply air control multiplier if not grounded
-                if (!IsGrounded)
-                {
-                    targetMovement *= _airMultiplier;
-                }
-            }
+            inputDirection = right * analogMove.X + forward * analogMove.Y;
+            if (inputDirection != Vector3.Zero)
+                inputDirection = Vector3.Normalize(inputDirection);
         }
 
-        // Blend current movement with target movement (apply inertia)
-        if (IsGrounded)
-        {
-            // Apply frame-rate independent inertia on the ground
-            //var frameInertia = (float)Math.Pow(_inertia, deltaTime);
-            //_currentMovement = Vector3.Lerp(targetMovement, _currentMovement, frameInertia);
-            CurrentMovement = Vector3.Lerp(targetMovement, CurrentMovement, _inertia);
+        // Store the current movement input for reference
+        CurrentMovementInput = inputDirection;
 
-            // Stop completely if movement is very small
-            if (CurrentMovement.LengthSquared < 0.0001f) CurrentMovement = Vector3.Zero;
+        // Calculate target velocity based on input
+        var targetSpeed = IsSneaking ? _sneakSpeed : _moveSpeed;
+        var targetVelocity = inputDirection * targetSpeed;
+
+        // Apply acceleration towards target velocity
+        var acceleration = _acceleration;
+        if (!IsGrounded)
+        {
+            // Reduced control in air
+            acceleration *= _airMultiplier;
+        }
+
+        // Get current horizontal velocity
+        var currentHorizontalVelocity = new Vector3(Velocity.X, 0, Velocity.Z);
+
+        // Accelerate towards target
+        var velocityDiff = targetVelocity - currentHorizontalVelocity;
+        var accelerationAmount = acceleration * deltaTime;
+
+        // Limit acceleration to prevent overshooting
+        if (velocityDiff.Length > accelerationAmount)
+        {
+            velocityDiff = Vector3.Normalize(velocityDiff) * accelerationAmount;
+        }
+
+        // Apply acceleration to horizontal velocity
+        Velocity.X += velocityDiff.X;
+        Velocity.Z += velocityDiff.Z;
+    }
+
+    private void ApplyFriction(float deltaTime)
+    {
+        if (!IsGrounded || _isMovementPressed) return;
+
+        // Apply ground friction when grounded and no input
+        var horizontalVelocity = new Vector3(Velocity.X, 0, Velocity.Z);
+        var speed = horizontalVelocity.Length;
+
+        if (speed > 0.001f)
+        {
+            var frictionAmount = _friction * deltaTime;
+            var newSpeed = MathF.Max(0, speed - frictionAmount);
+            var frictionFactor = newSpeed / speed;
+
+            Velocity.X *= frictionFactor;
+            Velocity.Z *= frictionFactor;
         }
         else
         {
-            // In air, maintain more control but still have some inertia
-            //var airInertia = (float)Math.Pow(_inertia * 0.8f, deltaTime);
-            // _currentMovement = Vector3.Lerp(targetMovement, _currentMovement, airInertia);
-            CurrentMovement = Vector3.Lerp(targetMovement, CurrentMovement, _inertia * 0.8f);
+            // Stop completely if velocity is very small
+            Velocity.X = 0;
+            Velocity.Z = 0;
         }
+    }
 
-        // Ensure we have a valid movement vector (prevents potential NaN issues)
-        if (float.IsNaN(CurrentMovement.X) || float.IsNaN(CurrentMovement.Z))
-        {
-            CurrentMovement = Vector3.Zero;
-        }
-
-        return CurrentMovement * deltaTime;
+    private void ClampVelocity()
+    {
+        if (Velocity.Length >= MaxVelocity || Velocity.LengthSquared <= -MaxVelocity) Velocity = Vector3.Normalize(Velocity) * MaxVelocity;
     }
 
     private void ApplyGravity(float deltaTime)
@@ -309,7 +328,7 @@ public class Player : GameObject
         // Handle jumping - allow jumping when grounded and cooldown is complete
         if (Input.IsKeyDown(Keys.Space) && IsGrounded && _jumpCooldown <= 0)
         {
-            Velocity.Y = _jumpForce * deltaTime;
+            Velocity.Y = _jumpForce;
             _jumpCooldown = _jumpCooldownTime;
         }
     }
@@ -323,16 +342,6 @@ public class Player : GameObject
         var normalizedDirection = Vector3.Normalize(direction);
         // Apply the punch force to the player's velocity
         Velocity += normalizedDirection * strength;
-        // Limit the velocity to prevent excessive speed
-    }
-
-    private Vector3 CalculateDisplacement(Vector3 horizontalMovement)
-    {
-        // Combine horizontal movement with vertical velocity for total displacement
-        Vector3 horizontalDisplacement = horizontalMovement;
-        Vector3 verticalDisplacement = new Vector3(0, Velocity.Y, 0);
-
-        return new Vector3(horizontalDisplacement.X, verticalDisplacement.Y, horizontalDisplacement.Z);
     }
 
     private void HandleCollisions(Vector3 intendedDisplacement, float deltaTime)
@@ -397,12 +406,12 @@ public class Player : GameObject
     public void LeftClickAction()
     {
         Console.WriteLine("left click action");
-        // AssetManager.PlaySound(SoundAsset.missing, volume: 0.5f);
+        Asseteer.PlaySound(SoundAsset.missing, volume: 0.5f);
     }
 
     public void RightClickAction()
     {
         Console.WriteLine("right click action");
-        // AssetManager.PlaySound(SoundAsset.missing, volume: 0.5f);
+        Asseteer.PlaySound(SoundAsset.missing, volume: 0.5f);
     }
 }
