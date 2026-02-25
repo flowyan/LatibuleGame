@@ -1,18 +1,26 @@
-﻿// Attributes
-attribute vec3 a_position;
-attribute vec4 a_color;
-attribute vec2 a_texCoords0;
+﻿#version 330 core
 
-// Uniforms
-uniform mat4 MatrixTransform;
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec4 aColor;
+layout (location = 2) in vec2 aTexCoords;
 
-// Varyings
-varying vec4 v_color;
-varying vec2 v_texCoords;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+uniform int flipGlyphY;
+
+out vec4 Color;
+out vec2 TexCoords;
 
 void main()
 {
-    v_color = a_color;
-    v_texCoords = a_texCoords0;
-    gl_Position = MatrixTransform * vec4(a_position, 1.0);
+    Color = aColor;
+    TexCoords = aTexCoords;
+
+    vec3 p = aPos;
+    if (flipGlyphY == 1)
+    p.y = -p.y;
+
+    gl_Position = projection * view * model * vec4(p, 1.0);
 }

@@ -1,19 +1,13 @@
-﻿#ifdef GL_ES
-	#define LOWP lowp
-	precision mediump float;
-#else
-	#define LOWP
-#endif
+﻿#version 330 core
 
+in vec4 Color;
+in vec2 TexCoords;
 
-// Uniforms
-uniform sampler2D TextureSampler;
+uniform sampler2D textureSampler;
 
-// Varyings
-varying vec4 v_color;
-varying vec2 v_texCoords;
+out vec4 FragColor;
 
 void main()
 {
-    gl_FragColor = v_color * texture2D(TextureSampler, v_texCoords);
+	FragColor = Color * texture(textureSampler, TexCoords);
 }
