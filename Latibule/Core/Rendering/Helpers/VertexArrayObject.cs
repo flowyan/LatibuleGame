@@ -22,7 +22,7 @@ public class VertexArrayObject : IDisposable
         GLUtility.CheckError();
     }
 
-    public unsafe void VertexAttribPointer(int index, int size, VertexAttribPointerType type, bool normalized, int offset)
+    public void VertexAttribPointer(int index, int size, VertexAttribPointerType type, bool normalized, int offset)
     {
         GL.VertexAttribPointer(index, size, type, normalized, _stride, (IntPtr)offset);
         GLUtility.CheckError();
