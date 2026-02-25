@@ -5,11 +5,15 @@ namespace Latibule.Core.Rendering.Helpers;
 
 internal static class GLUtility
 {
-    public static void CheckError()
+    public static void CheckError([System.Runtime.CompilerServices.CallerMemberName] string where = "")
     {
-        var error = GL.GetError();
-        if (error != ErrorCode.NoError)
-            LogError($"GL.GetError() returned {error.ToString()}");
-            // throw new Exception("GL.GetError() returned " + error.ToString());
+        ErrorCode e;
+        bool any = false;
+
+        while ((e = GL.GetError()) != ErrorCode.NoError)
+        {
+            any = true;
+            throw new Exception($"OpenGL error at {where}: {e}");
+        }
     }
 }
