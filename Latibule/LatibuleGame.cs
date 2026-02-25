@@ -225,6 +225,8 @@ public class LatibuleGame : GameWindow
         base.OnFramebufferResize(e);
 
         GL.Viewport(0, 0, e.Width, e.Height);
+        Player.Camera.AspectRatio = (float)e.Width / e.Height;
+        Player.Camera.UpdateProjectionMatrix();
     }
 
     protected override void Dispose(bool disposing)
