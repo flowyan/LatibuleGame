@@ -1,9 +1,9 @@
 ﻿namespace Latibule.Core.Rendering;
 
-public enum RenderPass
+public enum RenderLayer
 {
     World,
+    WorldText,
     Transparent,
-    DebugUI,
     UI
 }
