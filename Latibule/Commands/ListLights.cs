@@ -1,10 +1,12 @@
-﻿using Latibule.Core;
+﻿using JetBrains.Annotations;
+using Latibule.Core;
 using Latibule.Core.ECS;
 using Latibule.Core.Rendering;
 using Latibule.Models;
 
 namespace Latibule.Commands;
 
+[UsedImplicitly]
 public class ListLights : ICommand
 {
     public string Name { get; } = "lights";

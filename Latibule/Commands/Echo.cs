@@ -1,8 +1,10 @@
-﻿using Latibule.Core;
+﻿using JetBrains.Annotations;
+using Latibule.Core;
 using Latibule.Models;
 
 namespace Latibule.Commands;
 
+[UsedImplicitly]
 public class Echo : ICommand
 {
     public string Name { get; } = "echo";

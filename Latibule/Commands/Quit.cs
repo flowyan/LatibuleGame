@@ -1,7 +1,9 @@
-﻿using Latibule.Models;
+﻿using JetBrains.Annotations;
+using Latibule.Models;
 
 namespace Latibule.Commands;
 
+[UsedImplicitly]
 public class Quit : ICommand
 {
     public string Name { get; } = "quit";

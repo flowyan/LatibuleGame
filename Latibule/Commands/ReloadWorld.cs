@@ -1,9 +1,11 @@
-﻿using Latibule.Core.Rendering;
+﻿using JetBrains.Annotations;
+using Latibule.Core.Rendering;
 using Latibule.Models;
 using static Latibule.Core.Logger;
 
 namespace Latibule.Commands;
 
+[UsedImplicitly]
 public class ReloadWorld : ICommand
 {
     public string Name { get; } = "reloadworld";
@@ -12,11 +14,10 @@ public class ReloadWorld : ICommand
 
     public Task Execute(string[] args)
     {
-        LatibuleGame.UiTextRenderers.Clear();
         var player = LatibuleGame.Player;
         var noclip = LatibuleGame.Player.IsNoclip;
         LatibuleGame.GameWorld = new World();
-        LatibuleGame.GameWorld = LatibuleGame.CreateWorld();
+        LatibuleGame.GameWorld = TestWorld.Create();
         LatibuleGame.GameWorld.OnLoad();
         LogWarning("RECREATING WORLD");
         LatibuleGame.Player.Transform = player.Transform;
