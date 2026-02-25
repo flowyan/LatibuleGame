@@ -1,7 +1,6 @@
 ﻿using Latibule.Core.Components;
 using Latibule.Core.ECS;
 using Latibule.Core.Physics;
-using Latibule.Entities;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 
@@ -11,7 +10,7 @@ public class World
 {
     public List<GameObject> Objects { get; init; } = [];
 
-    public List<PointLight?> Lights { get; init; } = [];
+    public PointLight?[] Lights { get; init; } = new PointLight?[LightRenderer.MAX_POINT_LIGHTS];
 
     private BoundingBox[] _boundingBoxes = Array.Empty<BoundingBox>();
     private readonly Queue<GameObject> _pendingAdds = [];
@@ -38,10 +37,10 @@ public class World
             LatibuleGame.Player.Transform.Position = new Vector3(LatibuleGame.Player.Transform.Position.X, 100, LatibuleGame.Player.Transform.Position.Z);
     }
 
-    public void OnRenderFrame(FrameEventArgs args)
+    public void OnRenderFrame(FrameEventArgs args, RenderLayer layer)
     {
         _isIterating = true;
-        foreach (var obj in Objects) obj.OnRenderFrame(args);
+        foreach (var obj in Objects) obj.OnRenderFrame(args, layer);
         _isIterating = false;
         ApplyDeferredOperations();
     }
@@ -108,8 +107,8 @@ public class World
 
     public void AddPointLight(PointLight light)
     {
-        // var currentAmount = Lights.Count(l => l is not null);
-        // if (currentAmount < GameOptions.MAX_POINT_LIGHTS) Lights[currentAmount] = light;
-        Lights.Add(light);
+        var currentAmount = Lights.Count(l => l is not null);
+        if (currentAmount < LightRenderer.MAX_POINT_LIGHTS) Lights[currentAmount] = light;
+        else Logger.LogWarning($"ADDING MORE THAN MAX_POINT_LIGHTS ({LightRenderer.MAX_POINT_LIGHTS}). UNABLE TO RENDER MORE POINT LIGHTS!!!");
     }
 }
