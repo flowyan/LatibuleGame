@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿// https://gitlab.acidiclight.dev/sociallydistant/sociallydistant/-/blob/master/vendor/FontStashSharp/samples/FontStashSharp.Samples.OpenTK/Platform/Texture2DManager.cs
+using System.Drawing;
 using FontStashSharp.Interfaces;
 
 namespace Latibule.Core.Rendering.Text;
