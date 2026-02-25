@@ -1,15 +1,19 @@
 ﻿using System.Drawing;
+using Latibule.Core;
 using Latibule.Core.Physics;
 using Latibule.Core.Rendering;
-using Latibule.Entities;
+using Latibule.Utilities;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 
 namespace Latibule.Gui;
 
-public sealed class DebugUi3D : IDisposable
+public sealed class DebugUi3D : IRenderable, IDisposable
 {
+    public RenderLayer Layer { get; }
+
     public bool ShowBoundingBoxes { get; set; } = true;
+    public bool ShowPointLights { get; set; } = true;
     public Dictionary<Tuple<BoundingBox, Color>, bool> DrawBox { get; set; } = new();
 
     private readonly Shader _lineShader;
@@ -22,9 +26,12 @@ public sealed class DebugUi3D : IDisposable
     private int _vao;
     private int _vbo;
 
-    public DebugUi3D(Shader lineShader)
+    public DebugUi3D()
     {
-        _lineShader = lineShader ?? throw new ArgumentNullException(nameof(lineShader));
+        _lineShader = new Shader(
+            $"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}/debugui/debug_lines.vert",
+            $"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}/debugui/debug_lines.frag"
+        );
 
         _vao = GL.GenVertexArray();
         _vbo = GL.GenBuffer();
@@ -60,23 +67,33 @@ public sealed class DebugUi3D : IDisposable
         GL.BindVertexArray(0);
     }
 
-    public void OnRenderFrame()
+    public void Render()
     {
-        if (!ShowBoundingBoxes) return;
+        if (ShowBoundingBoxes)
+        {
+            GL.Enable(EnableCap.DepthTest); // occluded by world
+            // GL.Disable(EnableCap.DepthTest);  // always visible
 
-        // Pick your preference:
-        GL.Enable(EnableCap.DepthTest);   // occluded by world
-        // GL.Disable(EnableCap.DepthTest);  // always visible
+            DrawBoundingBoxOutline(LatibuleGame.Player.BoundingBox, Color.White);
 
-        DrawBoundingBoxOutline(LatibuleGame.Player.BoundingBox, Color.White);
+            foreach (var boundingBox in LatibuleGame.GameWorld.GetBoundingBoxes())
+                DrawBoundingBoxOutline(boundingBox, Color.Yellow);
 
-        foreach (var boundingBox in LatibuleGame.GameWorld.GetBoundingBoxes())
-            DrawBoundingBoxOutline(boundingBox, Color.Yellow);
+            foreach (var box in DrawBox.Where(b => b.Value))
+                DrawBoundingBoxOutline(box.Key.Item1, box.Key.Item2);
 
-        foreach (var box in DrawBox.Where(b => b.Value))
-            DrawBoundingBoxOutline(box.Key.Item1, box.Key.Item2);
+            DrawBox.Clear();
+        }
 
-        DrawBox.Clear();
+        if (ShowPointLights)
+        {
+            foreach (var light in LatibuleGame.GameWorld.Lights)
+            {
+                if (light is null) continue;
+                var box = AabbHelper.CreateFromCenterRotationScale(light.Position, new Vector3(0.25f), Vector3.Zero);
+                DrawBoundingBoxOutline(box, Color.DeepPink);
+            }
+        }
     }
 
     public void DrawBoundingBoxOutline(BoundingBox box, Color color)
@@ -161,7 +178,6 @@ public sealed class DebugUi3D : IDisposable
 
         // Enable line smoothing for better visual quality
         GL.Enable(EnableCap.LineSmooth);
-        GL.Hint(HintTarget.LineSmoothHint, HintMode.Nicest);
 
         // Draw the lines
         GL.DrawArrays(PrimitiveType.Lines, 0, pts.Length);
