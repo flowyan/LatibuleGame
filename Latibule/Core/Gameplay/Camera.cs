@@ -7,7 +7,7 @@ namespace Latibule.Core.Gameplay;
 public class Camera
 {
     // Constants
-    private const float Fov = 90f; // Field of view in degrees
+    internal static float Fov = GameOptions.FieldOfView; // Field of view in degrees
     private const float NearPlaneDistance = 0.001f; // Near plane distance for projection matrix
     private const float FarPlaneDistance = 250f; // Far plane distance for projection matrix
 
@@ -27,14 +27,14 @@ public class Camera
     public Vector3 HorizontalDirection;
 
     private Vector3 _target;
-    private float _aspectRatio;
+    internal float AspectRatio;
 
     private float _yaw;
     private float _pitch;
 
     public Camera(Vector3 position, Vector3 target, Vector3 eyePosition)
     {
-        _aspectRatio = GameStates.GameWindow.Bounds.Size.X / (float)GameStates.GameWindow.Bounds.Size.Y;
+        AspectRatio = GameStates.GameWindow.ClientSize.X / (float)GameStates.GameWindow.ClientSize.Y;
         _target = target;
 
         Position = position;
@@ -77,11 +77,11 @@ public class Camera
         View = Matrix4.LookAt(EyePosition, EyePosition + Direction, Vector3Direction.Up);
     }
 
-    private void UpdateProjectionMatrix()
+    internal void UpdateProjectionMatrix()
     {
         Projection = Matrix4.CreatePerspectiveFieldOfView(
             MathHelper.DegreesToRadians(Fov),
-            _aspectRatio,
+            AspectRatio,
             NearPlaneDistance,
             FarPlaneDistance);
     }
