@@ -9,7 +9,6 @@ struct Material {
     float shininess; // How shiny the surface is (higher = smaller, brighter highlights)
 };
 
-
 // This is our point light where we need the position as well as the constants defining the attenuation of the light
 struct PointLight {
     vec3 position;   // World position of the light
@@ -23,12 +22,13 @@ struct PointLight {
     vec3 specular;   // Specular light color
 };
 
-// We have a total of 4 point lights now, so we define a preprocessor directive to tell the GPU the size of our point light array
-#define NR_POINT_LIGHTS 1
-uniform PointLight pointLights[NR_POINT_LIGHTS];
+#define MAX_POINT_LIGHTS 32 // MAKE SURE VALUE IS THE SAME AS IN LightRenderer
+uniform int pointLightsAmount;
+uniform PointLight pointLights[MAX_POINT_LIGHTS];
 
 uniform Material material;
 uniform vec3 viewPos;  // Camera position in world space
+uniform float alphaCutoff; // 0 = disabled, else e.g. 0.5
 
 out vec4 FragColor;
 
@@ -43,7 +43,6 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 void main()
 {
-    // Properties
     vec3 norm = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);
 
@@ -52,33 +51,37 @@ void main()
     // Phase 1: Directional lighting
     //    vec3 result = CalcDirLight(dirLight, norm, viewDir);
     // Phase 2: Point lights
-    for (int i = 0; i < NR_POINT_LIGHTS; i++)
-    result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);
+    for (int i = 0; i < pointLightsAmount; i++) {
+        result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);
+    }
+
     // Phase 3: Spot light
     //    result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
 
-    FragColor = vec4(result, 1.0);
+    float alpha = texture(material.diffuse, TexCoords).a;
+    if (alphaCutoff > 0.0 && alpha < alphaCutoff) discard;
+    FragColor = vec4(result, alpha);
 }
 
 // Calculate point light contribution (light radiates from a point in all directions)
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
+    vec4 albedo = texture(material.diffuse, TexCoords); // RGBA
+    vec3 baseColor = albedo.rgb;
+
     vec3 lightDir = normalize(light.position - fragPos);
-    // Diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
-    // Specular shading
+
     vec3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-    // Attenuation (light gets weaker with distance)
+
     float distance = length(light.position - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance +
     light.quadratic * (distance * distance));
-    // Combine results
-    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
-    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));
+
+    vec3 ambient  = light.ambient  * baseColor;
+    vec3 diffuse  = light.diffuse  * diff * baseColor;
     vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));
-    ambient *= attenuation;
-    diffuse *= attenuation;
-    specular *= attenuation;
-    return (ambient + diffuse + specular);
+
+    return (ambient + diffuse + specular) * attenuation;
 }
