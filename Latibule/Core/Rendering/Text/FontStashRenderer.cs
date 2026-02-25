@@ -1,13 +1,15 @@
-﻿using System.Numerics;
+﻿// https://gitlab.acidiclight.dev/sociallydistant/sociallydistant/-/blob/master/vendor/FontStashSharp/samples/FontStashSharp.Samples.OpenTK/Platform/Renderer.cs
+
+using System.Numerics;
 using FontStashSharp.Interfaces;
-using Latibule.Core.Rendering;
+using Latibule.Core.ECS;
 using Latibule.Core.Rendering.Helpers;
-using Latibule.Core.Rendering.Text;
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 
 namespace Latibule.Core.Rendering.Text;
 
-internal class FontStashRenderer : IFontStashRenderer2, IDisposable
+public class FontStashRenderer : IFontStashRenderer2, IDisposable
 {
     private const int MAX_SPRITES = 2048;
     private const int MAX_VERTICES = MAX_SPRITES * 4;
@@ -41,13 +43,13 @@ internal class FontStashRenderer : IFontStashRenderer2, IDisposable
         _vao = new VertexArrayObject(sizeof(VertexPositionColorTexture));
         _vao.Bind();
 
-        var location = _shader.GetAttribLocation("a_position");
+        var location = _shader.GetAttribLocation("aPos");
         _vao.VertexAttribPointer(location, 3, VertexAttribPointerType.Float, false, 0);
 
-        location = _shader.GetAttribLocation("a_color");
+        location = _shader.GetAttribLocation("aColor");
         _vao.VertexAttribPointer(location, 4, VertexAttribPointerType.UnsignedByte, true, 12);
 
-        location = _shader.GetAttribLocation("a_texCoords0");
+        location = _shader.GetAttribLocation("aTexCoords");
         _vao.VertexAttribPointer(location, 2, VertexAttribPointerType.Float, false, 16);
     }
 
@@ -79,10 +81,53 @@ internal class FontStashRenderer : IFontStashRenderer2, IDisposable
         GLUtility.CheckError();
 
         _shader.Use();
-        _shader.SetUniform("TextureSampler", 0);
+        _shader.SetUniform("flipGlyphY", 0);
+        _shader.SetUniform("textureSampler", 0);
 
-        var transform = Matrix4x4.CreateOrthographicOffCenter(0, GameStates.GameWindow.ClientSize.X, GameStates.GameWindow.ClientSize.Y, 0, 0, -1);
-        _shader.SetUniform("MatrixTransform", transform);
+        var projection = Matrix4.CreateOrthographicOffCenter(
+            0,
+            GameStates.GameWindow.ClientSize.X,
+            GameStates.GameWindow.ClientSize.Y,
+            0,
+            -1f,
+            1f);
+
+        var view = Matrix4.Identity;
+        var model = Matrix4.Identity;
+
+        _shader.SetUniform("projection", projection);
+        _shader.SetUniform("view", view);
+        _shader.SetUniform("model", model);
+
+        _vao.Bind();
+        _indexBuffer.Bind();
+        _vertexBuffer.Bind();
+    }
+
+    public void BeginWorld(Transform transform)
+    {
+        GL.Enable(EnableCap.DepthTest);
+        GL.Enable(EnableCap.Blend);
+        GLUtility.CheckError();
+        GL.BlendFunc(BlendingFactor.One, BlendingFactor.OneMinusSrcAlpha);
+        GLUtility.CheckError();
+        GL.Disable(EnableCap.CullFace);
+        GLUtility.CheckError();
+
+        var camera = LatibuleGame.Player.Camera;
+
+        var model =
+            Matrix4.CreateTranslation(transform.Position) *
+            Matrix4.CreateRotationX(MathHelper.DegreesToRadians(transform.Rotation.X)) *
+            Matrix4.CreateRotationY(MathHelper.DegreesToRadians(transform.Rotation.Y)) *
+            Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(transform.Rotation.Z)) *
+            Matrix4.CreateScale(transform.Scale);
+
+        _shader.Use();
+        _shader.SetUniform("flipGlyphY", 1);
+        _shader.SetUniform("model", model);
+        _shader.SetUniform("view", camera.View);
+        _shader.SetUniform("projection", camera.Projection);
 
         _vao.Bind();
         _indexBuffer.Bind();
@@ -136,12 +181,14 @@ internal class FontStashRenderer : IFontStashRenderer2, IDisposable
         short[] result = new short[MAX_INDICES];
         for (int i = 0, j = 0; i < MAX_INDICES; i += 6, j += 4)
         {
-            result[i] = (short)(j);
-            result[i + 1] = (short)(j + 1);
-            result[i + 2] = (short)(j + 2);
-            result[i + 3] = (short)(j + 3);
-            result[i + 4] = (short)(j + 2);
-            result[i + 5] = (short)(j + 1);
+            // CCW
+            result[i + 0] = (short)(j + 0); // TL
+            result[i + 1] = (short)(j + 2); // BL
+            result[i + 2] = (short)(j + 1); // TR
+
+            result[i + 3] = (short)(j + 1); // TR
+            result[i + 4] = (short)(j + 2); // BL
+            result[i + 5] = (short)(j + 3); // BR
         }
 
         return result;
