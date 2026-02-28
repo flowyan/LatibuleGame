@@ -1,7 +1,7 @@
 ﻿using ImGuiNET;
-using Latibule.Models;
+using Latibule.Core.Types;
 using OpenTK.Windowing.Common;
-using ICommand = Latibule.Models.ICommand;
+using ICommand = Latibule.Core.Types.ICommand;
 using Vector2 = System.Numerics.Vector2;
 using Vector4 = System.Numerics.Vector4;
 
@@ -21,8 +21,6 @@ public class DevConsole : IGuiScreen
 
     public void OnRenderFrame(FrameEventArgs args)
     {
-        if (args.Time <= 0) return;
-
         ImGui.Begin("Dev Console", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
 
         var sizeX = GameStates.GameWindow.Size.X - 500;
