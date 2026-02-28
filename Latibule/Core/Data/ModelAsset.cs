@@ -3,5 +3,6 @@
 public enum ModelAsset
 {
     utahteapot,
-    maxwell
+    maxwell,
+    sponza
 }
