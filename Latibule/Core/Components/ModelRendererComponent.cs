@@ -1,6 +1,6 @@
 ﻿using Assimp;
 using Latibule.Core.ECS;
-using Latibule.Core.Rendering;
+using Latibule.Core.Rendering.Renderer;
 using OpenTK.Windowing.Common;
 
 namespace Latibule.Core.Components;
@@ -20,7 +20,8 @@ public class ModelRendererComponent(Scene model) : BaseComponent
             shaderComponent.Shader,
             model,
             Parent.Transform,
-            textureComponent?.Textures
+            textureComponent?.Textures,
+            textureComponent?.Textures.Length == 1 ? textureComponent.Textures[0] : null
         );
     }
 
