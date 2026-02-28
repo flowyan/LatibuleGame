@@ -1,11 +1,9 @@
-﻿using System.Numerics;
-using System.Reflection;
+﻿using System.Reflection;
 using ImGuiNET;
 using Latibule.Core;
 using Latibule.Core.ImGuiNet;
-using Latibule.Models;
+using Latibule.Core.Types;
 using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
 
 namespace Latibule.Services;
 
@@ -18,9 +16,7 @@ public static class DevConsoleService
         var key = System.Text.Encoding.UTF8.GetString(keyBase64);
         if (File.Exists($"key.txt")) GameStates.HasDeveloperKey = File.ReadAllText("key.txt") == key;
         if (Environment.GetEnvironmentVariable("DEV_KEY") != null) GameStates.HasDeveloperKey = Environment.GetEnvironmentVariable("DEV_KEY") == key;
-        if (GameStates.HasDeveloperKey)
-            DevConsole.Log(new ConsoleMessage("Developer key found. Developer tools granted.", ConsoleMessageType.Info,
-                new Vector4(0, 1, 0, 1)));
+        if (GameStates.HasDeveloperKey) Logger.LogInfo("Developer key found. Developer tools granted.");
 
         // Assign commands for DevConsole
         DevConsole.ConsoleCommands = Assembly.GetExecutingAssembly().GetTypes()
@@ -31,7 +27,7 @@ public static class DevConsoleService
         Logger.LogInfo($"Loaded {DevConsole.ConsoleCommands.Count} console commands.");
     }
 
-    public static void OnRenderFrame(FrameEventArgs args, IGLFWGraphicsContext context)
+    public static void OnRenderFrame(FrameEventArgs args)
     {
         if (GameStates.CurrentGui is DevConsole)
         {
@@ -43,12 +39,6 @@ public static class DevConsoleService
             // --------- //
             ImGui.Render();
             ImguiImplOpenGL3.RenderDrawData(ImGui.GetDrawData());
-            if (ImGui.GetIO().ConfigFlags.HasFlag(ImGuiConfigFlags.ViewportsEnable))
-            {
-                ImGui.UpdatePlatformWindows();
-                ImGui.RenderPlatformWindowsDefault();
-                context.MakeCurrent();
-            }
         }
     }
 }
