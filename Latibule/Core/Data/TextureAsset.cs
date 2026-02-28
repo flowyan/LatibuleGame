@@ -14,6 +14,9 @@ public enum TextureAsset
     misc_tequila,
     misc_speaker,
 
+    // DEBUG //
+    debug_pointlight,
+
     // MAXWELL
     maxwell_maxwell,
     maxwell_whiskers,
