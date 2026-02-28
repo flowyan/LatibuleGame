@@ -3,6 +3,7 @@
 public enum RenderLayer
 {
     World,
+    DebugOutline,
     WorldText,
     Transparent,
     UI
