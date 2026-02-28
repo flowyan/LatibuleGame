@@ -1,6 +1,6 @@
 ﻿using OpenTK.Windowing.Common;
 
-namespace Latibule.Models;
+namespace Latibule.Core.Types;
 
 public interface IGuiScreen
 {

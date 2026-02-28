@@ -2,7 +2,7 @@
 using JetBrains.Annotations;
 using Latibule.Core;
 using Latibule.Core.Gameplay;
-using Latibule.Models;
+using Latibule.Core.Types;
 
 namespace Latibule.Commands;
 

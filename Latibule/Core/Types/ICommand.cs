@@ -1,8 +1,6 @@
-﻿using System.Collections;
+﻿namespace Latibule.Core.Types;
 
-namespace Latibule.Models;
-
-public interface ISpecialConsoleCommand
+public interface ICommand
 {
     /// <summary>
     /// The name of the command.

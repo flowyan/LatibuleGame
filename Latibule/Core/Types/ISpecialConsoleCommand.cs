@@ -1,6 +1,6 @@
-﻿namespace Latibule.Models;
+﻿namespace Latibule.Core.Types;
 
-public interface ICommand
+public interface ISpecialConsoleCommand
 {
     /// <summary>
     /// The name of the command.

@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 using Latibule.Core;
 using Latibule.Core.Components;
 using Latibule.Core.Data;
-using Latibule.Models;
+using Latibule.Core.Types;
 using OpenTK.Mathematics;
 using Vector4 = System.Numerics.Vector4;
 

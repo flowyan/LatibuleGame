@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace Latibule.Models;
+namespace Latibule.Core.Types;
 
 public class ConsoleMessage
 {

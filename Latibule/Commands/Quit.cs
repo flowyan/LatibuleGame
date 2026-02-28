@@ -1,5 +1,5 @@
 ﻿using JetBrains.Annotations;
-using Latibule.Models;
+using Latibule.Core.Types;
 
 namespace Latibule.Commands;
 

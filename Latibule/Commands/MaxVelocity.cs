@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using Latibule.Core;
-using Latibule.Models;
 using JetBrains.Annotations;
+using Latibule.Core.Types;
 
 namespace Latibule.Commands;
 

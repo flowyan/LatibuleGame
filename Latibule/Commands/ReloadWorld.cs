@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 using Latibule.Core.Rendering;
-using Latibule.Models;
+using Latibule.Core.Types;
 using static Latibule.Core.Logger;
 
 namespace Latibule.Commands;

@@ -1,4 +1,4 @@
-﻿namespace Latibule.Models;
+﻿namespace Latibule.Core.Types;
 
 public static class Controls
 {

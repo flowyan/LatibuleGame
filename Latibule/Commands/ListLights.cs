@@ -2,7 +2,7 @@
 using Latibule.Core;
 using Latibule.Core.ECS;
 using Latibule.Core.Rendering;
-using Latibule.Models;
+using Latibule.Core.Types;
 
 namespace Latibule.Commands;
 

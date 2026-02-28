@@ -1,4 +1,4 @@
-﻿namespace Latibule.Models;
+﻿namespace Latibule.Core.Types;
 
 /// <summary>
 /// The type of message that is being logged.
