@@ -18,10 +18,6 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
         </None>
-        <None Include="lib\steamaudio\osx\**\*">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
-        </None>
         <None Include="lib\steamaudio\linux-x64\**\*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
