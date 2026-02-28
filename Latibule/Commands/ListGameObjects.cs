@@ -8,7 +8,7 @@ namespace Latibule.Commands;
 public class ListGameObjects : ICommand
 {
     public string Name { get; } = "gameobjects";
-    public List<string> Aliases { get; } = [];
+    public List<string> Aliases { get; } = ["objects"];
     public string Usage { get; } = "gameobjects";
 
     public Task Execute(string[] args)
