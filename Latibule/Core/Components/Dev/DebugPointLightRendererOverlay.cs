@@ -19,7 +19,7 @@ public class DebugPointLightRendererOverlay : BaseComponent
     {
         base.OnLoad(gameObject);
         RenderLayer = RenderLayer.Transparent;
-        _pointLightTexture = Asseteer.GetTexture(TextureAsset.debug_pointlight);
+        _pointLightTexture = Asseteer.GetTexture(TextureAsset.dev_pointlight);
         _outlineRenderer = new BoundingBoxOutlineRenderer();
     }
 
