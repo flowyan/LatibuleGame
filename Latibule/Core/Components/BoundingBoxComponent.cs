@@ -1,7 +1,10 @@
-﻿using Latibule.Core.ECS;
+﻿using System.Drawing;
+using Latibule.Core.ECS;
 using Latibule.Core.Physics;
+using Latibule.Core.Rendering.Renderer;
 using Latibule.Utilities;
 using OpenTK.Mathematics;
+using OpenTK.Windowing.Common;
 
 namespace Latibule.Core.Components;
 
@@ -10,18 +13,13 @@ namespace Latibule.Core.Components;
 ///
 /// For now only supports AABB.
 /// </summary>
-public class CollisionComponent(Vector3? position = null, Vector3? scale = null, Vector3? rotation = null) : BaseComponent
+public class BoundingBoxComponent(Vector3? position = null, Vector3? scale = null, Vector3? rotation = null) : BaseComponent
 {
-    public Vector3 Position { get; private set; }
+    public Vector3 Position { get; internal set; }
     public Vector3 Scale { get; private set; }
-    public Vector3 Rotation { get; private set; }
+    public Vector3 Rotation { get; internal set; }
     public BoundingBox BoundingBox { get; private set; }
     public Vector3 Center => BoundingBox.Center;
-
-    /// <summary>
-    /// Whether this object participates in AABB collision detection with the player.
-    /// </summary>
-    public bool HasCollision { get; set; } = true;
 
     public override void OnLoad(GameObject gameObject)
     {
@@ -35,6 +33,12 @@ public class CollisionComponent(Vector3? position = null, Vector3? scale = null,
         if (scale != null) Scale = scale.Value;
         if (rotation != null) Rotation = rotation.Value;
 
+        UpdateBoundingBox();
+    }
+
+    public override void OnUpdateFrame(FrameEventArgs args)
+    {
+        base.OnUpdateFrame(args);
         UpdateBoundingBox();
     }
 
