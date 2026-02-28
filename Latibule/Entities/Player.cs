@@ -3,7 +3,7 @@ using Latibule.Core.Data;
 using Latibule.Core.ECS;
 using Latibule.Core.Gameplay;
 using Latibule.Core.Physics;
-using Latibule.Models;
+using Latibule.Core.Types;
 using Latibule.Utilities;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
@@ -62,12 +62,16 @@ public class Player : GameObject
     public bool LookEnabled { get; set; } = true;
     public bool CanMove { get; set; } = true;
 
+    public Player()
+    {
+        var direction = Vector3Direction.Forward;
+        Camera = new Camera(CameraPosition, direction, EyePosition);
+    }
+
     public override void OnLoad()
     {
         base.OnLoad();
 
-        var direction = Vector3Direction.Forward;
-        Camera = new Camera(CameraPosition, direction, EyePosition);
         Physics = new PlayerPhysics(this);
 
         // Initialize position and orientation
@@ -190,6 +194,9 @@ public class Player : GameObject
 
         // Update the bounding box after position changes
         UpdateBoundingBox();
+
+        if (Transform.Position.Y < -100)
+            Transform.Position = new Vector3(Transform.Position.X, 100, Transform.Position.Z);
     }
 
     private void PushBackIfAtWorldEdge()
@@ -373,6 +380,7 @@ public class Player : GameObject
     private void CheckGrounded()
     {
         const float groundCheckDistance = 0.15f;
+        const float inwardOffset = 0.01f;
 
         var allCorners = BoundingBox.GetCorners();
         var bottomCorners = new Vector3[4];
@@ -381,23 +389,42 @@ public class Player : GameObject
         bottomCorners[2] = allCorners[6];
         bottomCorners[3] = allCorners[7];
 
+        var center = BoundingBox.Center;
+
+        // Move corners slightly inward on X and Z
+        for (var i = 0; i < bottomCorners.Length; i++)
+        {
+            var corner = bottomCorners[i];
+
+            var dirX = MathF.Sign(center.X - corner.X);
+            var dirZ = MathF.Sign(center.Z - corner.Z);
+
+            corner.X += dirX * inwardOffset;
+            corner.Z += dirZ * inwardOffset;
+
+            bottomCorners[i] = corner;
+        }
+
         var boxes = LatibuleGame.GameWorld.GetBoundingBoxes();
 
         foreach (var box in boxes)
         {
             foreach (var corner in bottomCorners)
             {
-                var rayStart = corner + new Vector3(0, 0.05f, 0);
+                var rayStart = corner + new Vector3(0, 0.14f, 0);
                 var rayEnd = rayStart - new Vector3(0, groundCheckDistance, 0);
 
-                if (!AabbHelper.RayIntersectsAabb(rayStart, rayEnd, box, out var hitPoint, out _)) continue;
+                if (!AabbHelper.RayIntersectsAabb(rayStart, rayEnd, box, out var hitPoint, out _))
+                    continue;
+
                 IsGrounded = true;
 
                 var distanceToGround = rayStart.Y - hitPoint.Y;
-                if (!(distanceToGround < 0.0001f)) return;
+                if (distanceToGround >= 0.0001f)
+                    return;
+
                 RawPosition = RawPosition with { Y = hitPoint.Y + 0.0001f };
                 UpdateBoundingBox();
-
                 return;
             }
         }
