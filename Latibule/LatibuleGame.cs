@@ -6,11 +6,8 @@ using Latibule.Core.Data;
 using Latibule.Core.ImGuiNet;
 using Latibule.Core.Rendering;
 using Latibule.Entities;
-using Latibule.Gui;
 using Latibule.Services;
-using Latibule.Utilities;
 using OpenTK.Graphics.OpenGL4;
-using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using static Latibule.Core.Logger;
@@ -20,16 +17,22 @@ namespace Latibule;
 
 public class LatibuleGame : GameWindow
 {
-    public static DebugUi DebugUi;
-    public static DebugUi3D DebugUi3d;
     public static Player Player { get; internal set; }
-    public static World GameWorld { get; set; }
+    public static World GameWorld { get; set; } = new();
 
-    public LatibuleGame(NativeWindowSettings nativeWindowSettings) : base(GameWindowSettings.Default, nativeWindowSettings)
+    public LatibuleGame(NativeWindowSettings nativeWindowSettings) : base(
+        new GameWindowSettings
+        {
+            UpdateFrequency = GameOptions.TargetFPS,
+            Win32SuspendTimerOnDrag = true, // Turning this off gives the player physics a bunch of issues when dragging the window
+        },
+        nativeWindowSettings
+    )
     {
         LogInfo($"Initializing {Metadata.GAME_NAME} version: {Metadata.GAME_VERSION}");
         GameStateManager.Initialize(this);
         DevConsoleService.Initialize();
+        CenterWindow();
     }
 
     protected override void OnLoad()
@@ -40,7 +43,7 @@ public class LatibuleGame : GameWindow
         GL.Enable(EnableCap.DebugOutput);
         GL.Enable(EnableCap.DebugOutputSynchronous);
 
-        GL.DebugMessageCallback((source, type, id, severity, length, message, userParam) =>
+        GL.DebugMessageCallback((source, type, id, severity, length, message, _) =>
         {
             var msg = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(message, length);
             LogWarning($"[GL DEBUG] {severity} {type} {source} (id={id}): {msg}");
@@ -54,24 +57,15 @@ public class LatibuleGame : GameWindow
 
         Core.SteamAudio.PrepareSteamAudio();
 
-        UpdateFrequency = GameOptions.TargetFPS;
-        VSync = VSyncMode.Off;
-        CursorState = CursorState.Grabbed;
-
-        Asseteer.LoadAssets(this);
-        Asseteer.PlaySound(SoundAsset.tada, volume: 0.25f, randomPitch: false);
-
         // IMGUI
         ImGui.CreateContext();
-        ImGuiIOPtr io = ImGui.GetIO();
+        var io = ImGui.GetIO();
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
-        io.ConfigFlags |= ImGuiConfigFlags.NavEnableGamepad;
         io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
-        io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable;
 
-        ImGui.StyleColorsDark();
+        ImGui.StyleColorsClassic();
 
-        ImGuiStylePtr style = ImGui.GetStyle();
+        var style = ImGui.GetStyle();
         if ((io.ConfigFlags & ImGuiConfigFlags.ViewportsEnable) != 0)
         {
             style.WindowRounding = 0.0f;
@@ -81,35 +75,27 @@ public class LatibuleGame : GameWindow
         ImguiImplOpenTK4.Init(this);
         ImguiImplOpenGL3.Init();
 
-        // TESTING WORLD
+        // Load the essential assets
+        Asseteer.LoadAssets();
+        CursorState = CursorState.Grabbed;
         GameWorld = TestWorld.Create();
         GameWorld.OnLoad();
 
-        DebugUi = new DebugUi();
-        DebugUi3d = new DebugUi3D();
-
-        Asseteer.PlaySteamAudioSound(SoundAsset.scarletfire, new Vector3(0, 1, -7.5f), 0.75f);
-    }
-
-    protected override void OnUnload()
-    {
-        base.OnUnload();
+        // Asseteer.PlaySteamAudioSound(SoundAsset.scarletfire, new Vector3(0, 1, -7.5f), 0.75f);
     }
 
     protected override void OnUpdateFrame(FrameEventArgs args)
     {
-        if (!IsFocused) return;
+        if (!Asseteer.Loaded) return;
+        base.OnUpdateFrame(args);
 
         Input.Update(KeyboardState);
         GameStateManager.Update(this);
         GameStates.MState = MouseState;
 
-        // Now run game logic that reads input + current physics state
         GameWorld.OnUpdateFrame(args);
 
-        Core.SteamAudio.SetListenerPosition(Player.Transform.Position, Player.Camera.Direction, Vector3Direction.Up);
-
-        base.OnUpdateFrame(args);
+        // Core.SteamAudio.SetListenerPosition(Player.Transform.Position, Player.Camera.Direction, Vector3Direction.Up);
     }
 
     protected override void OnRenderFrame(FrameEventArgs args)
@@ -118,12 +104,12 @@ public class LatibuleGame : GameWindow
 
         GL.ClearColor(Color.Black);
         GL.Enable(EnableCap.DepthTest);
+        GL.Enable(EnableCap.Multisample);
         GL.FrontFace(FrontFaceDirection.Ccw);
         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
         // CODE HERE //
         RenderQueue.OnFrameRender(args);
         // --------- //
-        DevConsoleService.OnRenderFrame(args, Context);
         SwapBuffers();
     }
 
