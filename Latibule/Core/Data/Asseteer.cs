@@ -8,8 +8,8 @@ using NAudio.Vorbis;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using OpenTK.Mathematics;
-using OpenTK.Windowing.Desktop;
 using static Latibule.Core.Logger;
+using Vector2 = System.Numerics.Vector2;
 
 namespace Latibule.Core.Data;
 
@@ -18,19 +18,16 @@ namespace Latibule.Core.Data;
 /// </summary>
 public static class Asseteer
 {
-    // keyed by shader path
-    // public static readonly Dictionary<string, Effect> Shaders = [];
+    public static bool Loaded { get; private set; } = false;
 
     // keyed by texture path
     private static readonly Dictionary<string, Texture> LoadedTextures = [];
-    // public static readonly Dictionary<string, IntPtr> LoadedImGuiTextures = [];
-
     private static readonly Dictionary<string, WaveStream> LoadedSoundsList = [];
-
+    private static readonly Dictionary<string, Shader> LoadedShaders = [];
     private static readonly Dictionary<string, Scene> LoadedModels = [];
 
-    public static FontStashRenderer FontRenderer = new();
-    public static FontSystem FontSystem = new();
+    public static FontStashRenderer FontRenderer = null!;
+    public static FontSystem FontSystem = null!;
     public static int FontSize = 32;
 
     public static AssimpContext AssimpContext = new();
@@ -38,13 +35,36 @@ public static class Asseteer
     private const float PitchMin = -0.2f;
     private const float PitchMax = 0.2f;
 
-    public static void LoadAssets(GameWindow gameWindow)
+    public static void LoadEssentialAssets()
     {
+        LoadShaders();
         LoadTextures();
-        LoadSounds();
         LoadFonts();
+    }
+
+    public static void LoadAssets()
+    {
+        LoadEssentialAssets();
+        FontRenderer.Begin();
+        // After loading fonts we can show a brief loading
+        var font = FontSystem.GetFont(FontSize);
+        font.DrawText(
+            FontRenderer,
+            "LOADING LOL",
+            new Vector2(10, 10),
+            FSColor.Red,
+            0,
+            Vector2.Zero,
+            Vector2.One
+        );
+
+        LoadSounds();
         LoadModels();
-        // LoadShaders(content);
+
+        // Play a tada! when done :)
+        PlaySound(SoundAsset.tada, volume: 0.25f, randomPitch: false);
+        Loaded = true;
+        FontRenderer.End();
     }
 
     // TODO: add support for subsubfolders so stuff like model_modelname_texture1 can work with TextureAsset
@@ -69,6 +89,27 @@ public static class Asseteer
                 LogError($"Failed to load texture: {textureName} ({file.Name}) - {e}");
             }
         }
+    }
+
+    public static Texture GetTexture(TextureAsset textureAsset)
+    {
+        // parse the texture path and return the texture
+        var textureName = textureAsset.ToString().Replace("_", "/");
+        try
+        {
+            return LoadedTextures[textureName];
+        }
+        catch (Exception e)
+        {
+            LogError(e.Message);
+            return GetTexture(TextureAsset.missing);
+        }
+    }
+
+    public static Texture[] GetTextures(TextureAsset[] textureAssets)
+    {
+        var textureNames = textureAssets.Select(x => x.ToString().Replace("_", "/"));
+        return LoadedTextures.Where(x => textureNames.Contains(x.Key)).Select(x => x.Value).ToArray();
     }
 
     private static void LoadSounds()
@@ -100,17 +141,35 @@ public static class Asseteer
         }
     }
 
-    public static Texture GetTexture(TextureAsset textureAsset)
+    private static void LoadShaders()
     {
-        // parse the texture path and return the texture
-        var textureName = textureAsset.ToString().ToLower().Replace("_", "/");
-        return LoadedTextures[textureName];
+        var shaderDir = new DirectoryInfo($"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}");
+        if (!shaderDir.Exists) throw new Exception($"Missing shader directory: {shaderDir.FullName}");
+
+        foreach (var file in shaderDir.EnumerateFiles(searchPattern: "*.*", searchOption: SearchOption.AllDirectories))
+        {
+            var parentFolderName = file.Directory?.Name == Metadata.ASSETS_SHADER_PATH ? "" : $"{file.Directory?.Name}/";
+            var shaderName = $"{parentFolderName}{file.Name.Replace(file.Extension, "")}";
+            try
+            {
+                var shader = new Shader(
+                    $"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}/{shaderName}.vert",
+                    $"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}/{shaderName}.frag"
+                );
+                LoadedShaders[shaderName] = shader;
+                LogInfo($"Loaded shader: {shaderName} ({file.Name})");
+            }
+            catch (Exception e)
+            {
+                LogError($"Failed to load shader: {shaderName} ({file.Name}) - {e}");
+            }
+        }
     }
 
-    public static Texture[] GetTextures(TextureAsset[] textureAssets)
+    public static Shader GetShader(ShaderAsset shaderAsset)
     {
-        var textureNames = textureAssets.Select(x => x.ToString().ToLower().Replace("_", "/"));
-        return LoadedTextures.Where(x => textureNames.Contains(x.Key)).Select(x => x.Value).ToArray();
+        var shaderName = shaderAsset.ToString().Replace("_", "/");
+        return LoadedShaders[shaderName];
     }
 
     private static void LoadFonts()
@@ -121,9 +180,9 @@ public static class Asseteer
         // TODO: go through the folder and add the fonts recursively
         FontSystem = new FontSystem(new FontSystemSettings
         {
-            FontResolutionFactor = 4,
-            KernelWidth = 2,
-            KernelHeight = 2,
+            FontResolutionFactor = 8,
+            KernelWidth = 1,
+            KernelHeight = 1,
         });
         FontSystem.AddFont(File.ReadAllBytes(@"Assets/font/Jersey10.ttf"));
     }
@@ -162,14 +221,14 @@ public static class Asseteer
 
     public static Scene GetModel(ModelAsset modelAsset)
     {
-        var modelName = modelAsset.ToString().ToLower().Replace("_", "/");
+        var modelName = modelAsset.ToString().Replace("_", "/");
         return LoadedModels[modelName];
     }
 
     public static void PlaySound(SoundAsset soundAsset, float volume = 0.5f, bool randomPitch = true)
     {
         var outputDevice = new WaveOutEvent();
-        var soundName = soundAsset.ToString().ToLower();
+        var soundName = soundAsset.ToString();
         var sound = LoadedSoundsList[soundName];
         // var loopStream = new LoopStream(sound);
         // sound.Pitch = randomPitch ? (float)(new Random().NextDouble() * (PitchMax - PitchMin) + PitchMin) : 0;
@@ -188,7 +247,7 @@ public static class Asseteer
 
     public static void PlaySteamAudioSound(SoundAsset soundAsset, Vector3 soundPosition, float volume = 0.5f)
     {
-        var soundName = soundAsset.ToString().ToLower();
+        var soundName = soundAsset.ToString();
         var stream = LoadedSoundsList[soundName];
         var sp = stream.ToSampleProvider();
 
