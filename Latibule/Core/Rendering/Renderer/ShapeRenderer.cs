@@ -4,12 +4,10 @@ using Latibule.Core.Rendering.Helpers;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 
-namespace Latibule.Core.Rendering;
+namespace Latibule.Core.Rendering.Renderer;
 
 public class ShapeRenderer : IRenderable, IDisposable
 {
-    public RenderLayer Layer => RenderLayer.World;
-
     private Shader _shader = null!;
     private Texture? _texture;
     private Transform _transform;

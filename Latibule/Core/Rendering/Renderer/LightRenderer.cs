@@ -1,4 +1,4 @@
-﻿namespace Latibule.Core.Rendering;
+﻿namespace Latibule.Core.Rendering.Renderer;
 
 public static class LightRenderer
 {

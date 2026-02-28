@@ -1,8 +1,6 @@
-﻿using Latibule.Core.Data;
-using Latibule.Core.ECS;
-using Latibule.Core.Rendering;
+﻿using Latibule.Core.ECS;
 using Latibule.Core.Rendering.Helpers;
-using OpenTK.Graphics.OpenGL4;
+using Latibule.Core.Rendering.Renderer;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 

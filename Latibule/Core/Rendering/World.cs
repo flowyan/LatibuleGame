@@ -1,6 +1,7 @@
 ﻿using Latibule.Core.Components;
 using Latibule.Core.ECS;
 using Latibule.Core.Physics;
+using Latibule.Core.Rendering.Renderer;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 
@@ -32,9 +33,6 @@ public class World
         foreach (var obj in Objects) obj.OnUpdateFrame(args);
         _isIterating = false;
         ApplyDeferredOperations();
-
-        if (LatibuleGame.Player.Transform.Position.Y < -100)
-            LatibuleGame.Player.Transform.Position = new Vector3(LatibuleGame.Player.Transform.Position.X, 100, LatibuleGame.Player.Transform.Position.Z);
     }
 
     public void OnRenderFrame(FrameEventArgs args, RenderLayer layer)
@@ -98,7 +96,7 @@ public class World
 
         for (int i = 0; i < Objects.Count; i++)
         {
-            var box = Objects[i].Get<CollisionComponent>()?.BoundingBox;
+            var box = Objects[i].Get<BoundingBoxComponent>()?.BoundingBox;
             if (box != null) _boundingBoxes[i] = box.Value;
         }
 

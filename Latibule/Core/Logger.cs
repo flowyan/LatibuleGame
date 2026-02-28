@@ -1,5 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
-using Latibule.Models;
+using Latibule.Core.Types;
 
 namespace Latibule.Core;
 

@@ -1,9 +1,10 @@
 ﻿using Latibule.Core.Components;
+using Latibule.Core.Data;
 using Latibule.Core.ECS;
 using Latibule.Core.Rendering.Shapes;
 using OpenTK.Mathematics;
 
-namespace Latibule.Core.Rendering.Objects;
+namespace Latibule.Objects;
 
 /// <summary>
 /// A flat plane for ground/floor rendering and collision.
@@ -20,15 +21,10 @@ public class PlaneObject : GameObject
     {
         base.OnLoad();
 
-        var shader = new Shader(
-        $"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}/mesh/shader.vert",
-            $"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}/mesh/shader.frag"
-        );
-
         WithComponents([
-            new ShaderComponent(shader),
+            new ShaderComponent(Asseteer.GetShader(ShaderAsset.mesh_shader)),
             new ShapeRendererComponent(new PlaneShape()),
-            new CollisionComponent()
+            new BoundingBoxComponent()
         ]);
     }
 }
