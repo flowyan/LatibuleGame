@@ -87,12 +87,14 @@ public class Player : GameObject
             Velocity = Vector3.Zero;
             UpdateBoundingBox();
         });
-        Input.BindKeyPressed(Keys.V, () =>
-        {
-            IsNoclip = !IsNoclip;
-            Velocity = Vector3.Zero;
-        });
+        Input.BindKeyPressed(Keys.V, ToggleNoclip);
         Input.BindKeyPressed(Keys.P, () => Punch(Camera.Direction, 15f));
+    }
+
+    public void ToggleNoclip()
+    {
+        IsNoclip = !IsNoclip;
+        Velocity = Vector3.Zero;
     }
 
     public void UpdateBoundingBox()
