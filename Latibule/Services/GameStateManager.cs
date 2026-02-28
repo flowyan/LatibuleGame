@@ -2,7 +2,7 @@
 using ImGuiNET;
 using Latibule.Commands;
 using Latibule.Core;
-using Latibule.Models;
+using Latibule.Core.Types;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -24,15 +24,15 @@ public static class GameStateManager
             Keys.LeftShift
         );
         Input.BindKeyPressed(Keys.F1, () => GameStates.ShowHud = !GameStates.ShowHud);
-        Input.BindKeyPressed(Keys.F3, () => LatibuleGame.DebugUi.ShowDebug = !LatibuleGame.DebugUi.ShowDebug);
+        Input.BindKeyPressed(Keys.F3, () => GameStates.EnabledDebugOverlays[DebugOverlayType.Info] = !GameStates.EnabledDebugOverlays[DebugOverlayType.Info]);
         Input.BindComboPressed(
             Keys.B,
-            () => LatibuleGame.DebugUi3d.ShowBoundingBoxes = !LatibuleGame.DebugUi3d.ShowBoundingBoxes,
+            () => GameStates.EnabledDebugOverlays[DebugOverlayType.BoundingBoxes] = !GameStates.EnabledDebugOverlays[DebugOverlayType.BoundingBoxes],
             Keys.F3
         );
         Input.BindComboPressed(
             Keys.L,
-            () => LatibuleGame.DebugUi3d.ShowPointLights = !LatibuleGame.DebugUi3d.ShowPointLights,
+            () => GameStates.EnabledDebugOverlays[DebugOverlayType.PointLights] = !GameStates.EnabledDebugOverlays[DebugOverlayType.PointLights],
             Keys.F3
         );
         Input.BindKeyPressed(Keys.F5, () => new ReloadWorld().Execute([]));
@@ -67,7 +67,6 @@ public static class GameStateManager
         }
         else if (GameStates.CurrentGui == null)
         {
-            // if (imgui) ImGuiStartTextInput();
             gui.Initialize();
             Logger.LogDebug($"Showing GUI: {gui.GetType().Name}", logToDevConsole: gui is not DevConsole);
             GameStates.MouseLookLocked = true;
