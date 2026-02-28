@@ -10,30 +10,37 @@ using PrimitiveType = OpenTK.Graphics.OpenGL4.PrimitiveType;
 using Vector2 = OpenTK.Mathematics.Vector2;
 using Vector3 = OpenTK.Mathematics.Vector3;
 
-namespace Latibule.Core.Rendering;
+namespace Latibule.Core.Rendering.Renderer;
 
 public sealed class ModelRenderer : IRenderable, IDisposable
 {
-    public RenderLayer Layer => RenderLayer.World;
-
     private readonly Shader _shader;
     private readonly Scene _scene;
     private readonly Transform _transform;
+    private readonly Texture _fallback;
 
-    // index = Assimp material index
     private readonly IReadOnlyList<Texture>? _texturesByMaterial;
+    private readonly Texture? _forceAllTexture;
 
     private readonly List<GpuMesh> _meshes = [];
 
     private readonly List<(GpuMesh mesh, Matrix4 model)> _opaque = new();
     private readonly List<(GpuMesh mesh, Matrix4 model, float sortKey)> _transparent = new();
 
-    public ModelRenderer(Shader shader, Scene model, Transform transform, IReadOnlyList<Texture>? texturesByMaterial)
+    public ModelRenderer(
+        Shader shader,
+        Scene model,
+        Transform transform,
+        IReadOnlyList<Texture>? texturesByMaterial,
+        Texture? forceAllTexture = null)
     {
         _shader = shader;
         _scene = model;
         _transform = transform;
-        _texturesByMaterial = texturesByMaterial ?? [Asseteer.GetTexture(TextureAsset.missing)];
+
+        _fallback = Asseteer.GetTexture(TextureAsset.missing);
+        _texturesByMaterial = texturesByMaterial;
+        _forceAllTexture = forceAllTexture;
 
         BuildGpuMeshes(_scene);
     }
@@ -121,8 +128,23 @@ public sealed class ModelRenderer : IRenderable, IDisposable
         _shader.SetUniform("model", model);
 
         GL.ActiveTexture(TextureUnit.Texture0);
-        if (_texturesByMaterial != null && mesh.MaterialIndex >= 0 && mesh.MaterialIndex < _texturesByMaterial.Count)
-            _texturesByMaterial[mesh.MaterialIndex].Bind();
+
+        Texture tex = _fallback;
+
+        // 1) If forced, always use it
+        if (_forceAllTexture != null)
+        {
+            tex = _forceAllTexture;
+        }
+        // 2) Else use per-material if available
+        else if (_texturesByMaterial != null &&
+                 mesh.MaterialIndex >= 0 &&
+                 mesh.MaterialIndex < _texturesByMaterial.Count)
+        {
+            tex = _texturesByMaterial[mesh.MaterialIndex];
+        }
+
+        tex.Bind();
 
         mesh.Vao.Bind();
         GL.DrawElements(PrimitiveType.Triangles, mesh.IndexCount, DrawElementsType.UnsignedInt, 0);
