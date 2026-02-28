@@ -1,4 +1,4 @@
-﻿using Latibule.Models;
+﻿using Latibule.Core.Types;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
@@ -17,6 +17,14 @@ public static class GameStates
     public static IGuiScreen? CurrentGui { get; set; }
 
     public static bool ShowHud { get; set; } = true;
+
+    // Debug related
+    public static readonly bool DebugEnv = Environment.GetEnvironmentVariable("debug") == "true";
+
+    public static Dictionary<DebugOverlayType, bool> EnabledDebugOverlays { get; } =
+        new(Enum.GetValues<DebugOverlayType>()
+            .Select(x => new KeyValuePair<DebugOverlayType, bool>(x, DebugEnv))
+        );
 
     public static void Initialize(GameWindow gameWindow)
     {
