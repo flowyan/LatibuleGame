@@ -1,37 +1,27 @@
 ﻿using System.Drawing;
-using Latibule.Core;
+using Latibule.Core.Data;
 using Latibule.Core.Physics;
-using Latibule.Core.Rendering;
-using Latibule.Utilities;
-using OpenTK.Graphics.OpenGL;
+using Latibule.Core.Types;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 
-namespace Latibule.Gui;
+namespace Latibule.Core.Rendering.Renderer;
 
-public sealed class DebugUi3D : IRenderable, IDisposable
+public class BoundingBoxOutlineRenderer : IDisposable
 {
-    public RenderLayer Layer { get; }
-
-    public bool ShowBoundingBoxes { get; set; } = true;
-    public bool ShowPointLights { get; set; } = true;
-    public Dictionary<Tuple<BoundingBox, Color>, bool> DrawBox { get; set; } = new();
-
-    private readonly Shader _lineShader;
+    private Shader _lineShader = null!;
 
     private const int VertexCount = 24;
     private const int FloatsPerVertex = 6; // pos.xyz + color.rgb
+    private const float LineWidth = 1.0f; // Line width in pixels
     private readonly float[] _data = new float[VertexCount * FloatsPerVertex];
-    private const float LineWidth = 2.0f; // Line width in pixels
 
     private int _vao;
     private int _vbo;
 
-    public DebugUi3D()
+    public BoundingBoxOutlineRenderer()
     {
-        _lineShader = new Shader(
-            $"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}/debugui/debug_lines.vert",
-            $"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}/debugui/debug_lines.frag"
-        );
+        _lineShader = Asseteer.GetShader(ShaderAsset.debugui_debugLines);
 
         _vao = GL.GenVertexArray();
         _vbo = GL.GenBuffer();
@@ -67,37 +57,13 @@ public sealed class DebugUi3D : IRenderable, IDisposable
         GL.BindVertexArray(0);
     }
 
-    public void Render()
+    public void Render(BoundingBox box, Color color)
     {
-        if (ShowBoundingBoxes)
-        {
-            GL.Enable(EnableCap.DepthTest); // occluded by world
-            // GL.Disable(EnableCap.DepthTest);  // always visible
+        if (!GameStates.EnabledDebugOverlays[DebugOverlayType.BoundingBoxes]) return;
 
-            DrawBoundingBoxOutline(LatibuleGame.Player.BoundingBox, Color.White);
+        GL.Enable(EnableCap.DepthTest); // occluded by world
+        // GL.Disable(EnableCap.DepthTest);  // always visible
 
-            foreach (var boundingBox in LatibuleGame.GameWorld.GetBoundingBoxes())
-                DrawBoundingBoxOutline(boundingBox, Color.Yellow);
-
-            foreach (var box in DrawBox.Where(b => b.Value))
-                DrawBoundingBoxOutline(box.Key.Item1, box.Key.Item2);
-
-            DrawBox.Clear();
-        }
-
-        if (ShowPointLights)
-        {
-            foreach (var light in LatibuleGame.GameWorld.Lights)
-            {
-                if (light is null) continue;
-                var box = AabbHelper.CreateFromCenterRotationScale(light.Position, new Vector3(0.25f), Vector3.Zero);
-                DrawBoundingBoxOutline(box, Color.DeepPink);
-            }
-        }
-    }
-
-    public void DrawBoundingBoxOutline(BoundingBox box, Color color)
-    {
         Vector3[] c =
         [
             new(box.Min.X, box.Min.Y, box.Min.Z),
@@ -194,8 +160,6 @@ public sealed class DebugUi3D : IRenderable, IDisposable
 
     public void Dispose()
     {
-        DrawBox.Clear();
-
         if (_vbo != 0) GL.DeleteBuffer(_vbo);
         if (_vao != 0) GL.DeleteVertexArray(_vao);
 

@@ -1,22 +1,41 @@
 ﻿using System.Text;
 using FontStashSharp;
-using Latibule.Core;
 using Latibule.Core.Data;
+using Latibule.Core.ECS;
 using Latibule.Core.Rendering;
+using Latibule.Core.Rendering.Renderer;
+using Latibule.Core.Types;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 
-namespace Latibule.Gui;
+namespace Latibule.Core.Components.Dev;
 
-public class DebugUi
+public class DebugInfoOverlay : BaseComponent
 {
-    public bool ShowDebug = Environment.GetEnvironmentVariable("debug") == "true";
+    private string _userMachine = $"{Environment.UserName}@{Environment.MachineName}";
+    private string _os = Environment.OSVersion.ToString();
+    private string _gpu = GL.GetString(StringName.Renderer);
+    private string _glslVersion = GL.GetString(StringName.ShadingLanguageVersion);
 
-    public void OnRenderFrame(FrameEventArgs args)
+    private UiTextRenderer _textRenderer;
+
+    public DebugInfoOverlay()
+    {
+        RenderLayer = RenderLayer.UI;
+        _textRenderer = new UiTextRenderer(new TextRendererOptions()
+        {
+            fontSize = 32,
+            fontSystemEffect = FontSystemEffect.Stroked,
+            effectAmount = 8
+        });
+    }
+
+    public override void OnRenderFrame(FrameEventArgs args)
     {
         if (!GameStates.ShowHud) return;
         DrawText($"{Metadata.GAME_NAME} {Metadata.GAME_VERSION}", new Vector2(5, 0), FSColor.White);
-        if (ShowDebug) DrawDebugScreen(args);
+        if (GameStates.EnabledDebugOverlays[DebugOverlayType.Info]) DrawDebugScreen(args);
     }
 
     // https://stackoverflow.com/questions/272633/add-spaces-before-capital-letters
@@ -60,12 +79,13 @@ public class DebugUi
         var rightSidePosition = new Vector2(gameWindow.ClientSize.X - 5, 0);
         string[] rightAlignedTexts =
         [
-            $"{Environment.UserName}@{Environment.MachineName}",
-            $"OS: {Environment.OSVersion}",
+            $"{_userMachine}",
+            $"OS: {_os}",
             $"GC Used memory: {GC.GetTotalMemory(false) / 1024 / 1024} MB",
             $"Time: {DateTime.Now:HH:mm:ss}",
             $"Resolution: {gameWindow.ClientSize.X}x{gameWindow.ClientSize.Y}",
-            $"{gameWindow.API.ToString()} {gameWindow.APIVersion}",
+            $"{_gpu}",
+            $"{gameWindow.API.ToString()} {gameWindow.APIVersion} (GLSL {_glslVersion})",
         ];
         DrawTextArray(rightAlignedTexts, rightSidePosition, FSColor.White, true);
     }
@@ -84,10 +104,7 @@ public class DebugUi
 
     private void DrawText(string text, Vector2 position, FSColor color)
     {
-        var font = Asseteer.FontSystem.GetFont(Asseteer.FontSize);
-        // draw text
-        var _renderer = new UiTextRenderer(text, position, 1, color);
-        _renderer.Render();
+        _textRenderer.Render(position, text);
     }
 
     private void DrawTextArray(string[] texts, Vector2 startPosition, FSColor color, bool rightSide = false)
@@ -100,9 +117,7 @@ public class DebugUi
             if (rightSide) startPosition.X = (GameStates.GameWindow.ClientSize.X - font.MeasureString(text).X) - 5;
 
             var position = startPosition + new Vector2(0, i * font.LineHeight * 0.75f);
-            // draw text
-            var _renderer = new UiTextRenderer(text, position, 1);
-            _renderer.Render();
+            _textRenderer.Render(position, text);
         }
     }
 }
