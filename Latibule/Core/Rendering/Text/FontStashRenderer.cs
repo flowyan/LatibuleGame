@@ -2,10 +2,13 @@
 
 using System.Numerics;
 using FontStashSharp.Interfaces;
+using Latibule.Core.Data;
 using Latibule.Core.ECS;
 using Latibule.Core.Rendering.Helpers;
+using Latibule.Core.Types;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
+using Vector4 = OpenTK.Mathematics.Vector4;
 
 namespace Latibule.Core.Rendering.Text;
 
@@ -37,7 +40,7 @@ public class FontStashRenderer : IFontStashRenderer2, IDisposable
         _indexBuffer = new BufferObject<short>(indexData.Length, BufferTarget.ElementArrayBuffer, false);
         _indexBuffer.SetData(indexData, 0, indexData.Length);
 
-        _shader = new Shader($"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}/text/shader.vert", $"{Metadata.ASSETS_ROOT_DIRECTORY}/{Metadata.ASSETS_SHADER_PATH}/text/shader.frag");
+        _shader = Asseteer.GetShader(ShaderAsset.text_shader);
         _shader.Use();
 
         _vao = new VertexArrayObject(sizeof(VertexPositionColorTexture));
@@ -104,28 +107,58 @@ public class FontStashRenderer : IFontStashRenderer2, IDisposable
         _vertexBuffer.Bind();
     }
 
-    public void BeginWorld(Transform transform)
+    public void BeginWorld(Transform transform, BillboardEnum? billboard = null)
     {
-        GL.Enable(EnableCap.DepthTest);
+        GL.DepthMask(false);
+        GLUtility.CheckError();
         GL.Enable(EnableCap.Blend);
         GLUtility.CheckError();
         GL.BlendFunc(BlendingFactor.One, BlendingFactor.OneMinusSrcAlpha);
         GLUtility.CheckError();
-        GL.Disable(EnableCap.CullFace);
+
+        if (billboard.HasValue) GL.Enable(EnableCap.CullFace);
+        else GL.Disable(EnableCap.CullFace);
         GLUtility.CheckError();
 
         var camera = LatibuleGame.Player.Camera;
 
+        const float fontPixelToWorld = 0.01f;
         var model =
-            Matrix4.CreateTranslation(transform.Position) *
+            Matrix4.CreateScale(fontPixelToWorld) *
             Matrix4.CreateRotationX(MathHelper.DegreesToRadians(transform.Rotation.X)) *
             Matrix4.CreateRotationY(MathHelper.DegreesToRadians(transform.Rotation.Y)) *
             Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(transform.Rotation.Z)) *
-            Matrix4.CreateScale(transform.Scale);
+            Matrix4.CreateTranslation(transform.Position);
+
+        var invView = camera.View.Inverted();
+        var right = invView.Row0.Xyz;
+        var up = invView.Row1.Xyz;
+        var fwd = invView.Row2.Xyz;
+
+        var fullBillboard = new Matrix4(
+            new Vector4(right, 0),
+            new Vector4(up, 0),
+            new Vector4(fwd, 0),
+            Vector4.UnitW
+        );
+
+        var yLockedBillboard = new Matrix4(
+            new Vector4(right, 0),
+            Vector4.UnitY,
+            new Vector4(fwd, 0),
+            Vector4.UnitW
+        );
 
         _shader.Use();
         _shader.SetUniform("flipGlyphY", 1);
-        _shader.SetUniform("model", model);
+
+        var modelToUse = billboard switch
+        {
+            BillboardEnum.Full => fullBillboard * model,
+            BillboardEnum.YLocked => yLockedBillboard * model,
+            _ => model
+        };
+        _shader.SetUniform("model", modelToUse);
         _shader.SetUniform("view", camera.View);
         _shader.SetUniform("projection", camera.Projection);
 
@@ -160,18 +193,12 @@ public class FontStashRenderer : IFontStashRenderer2, IDisposable
         GLUtility.CheckError();
     }
 
-    private unsafe void FlushBuffer()
+    private void FlushBuffer()
     {
-        if (_vertexIndex == 0 || _lastTexture == null)
-        {
-            return;
-        }
-
+        if (_vertexIndex == 0) return;
         _vertexBuffer.SetData(_vertexData, 0, _vertexIndex);
-
         var texture = (Texture)_lastTexture;
         texture.Bind();
-
         GL.DrawElements(PrimitiveType.Triangles, _vertexIndex * 6 / 4, DrawElementsType.UnsignedShort, IntPtr.Zero);
         _vertexIndex = 0;
     }
