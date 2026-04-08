@@ -2,6 +2,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Latibule", "Latibule\Latibule.csproj", "{92043754-0D5A-4EC8-BBB7-DA157B2D1944}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Editor", "Editor\Editor.csproj", "{0727FF8F-9A21-4B88-A8EF-26C08C2C3488}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Engine", "Engine\Engine.csproj", "{45ABC7E1-B169-4C9A-BF71-AE649A47A316}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Release|Any CPU = Release|Any CPU
@@ -12,5 +16,13 @@ Global
 		{92043754-0D5A-4EC8-BBB7-DA157B2D1944}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{92043754-0D5A-4EC8-BBB7-DA157B2D1944}.Release|Any CPU.Build.0 = Release|Any CPU
 		{92043754-0D5A-4EC8-BBB7-DA157B2D1944}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0727FF8F-9A21-4B88-A8EF-26C08C2C3488}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0727FF8F-9A21-4B88-A8EF-26C08C2C3488}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0727FF8F-9A21-4B88-A8EF-26C08C2C3488}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0727FF8F-9A21-4B88-A8EF-26C08C2C3488}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45ABC7E1-B169-4C9A-BF71-AE649A47A316}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45ABC7E1-B169-4C9A-BF71-AE649A47A316}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45ABC7E1-B169-4C9A-BF71-AE649A47A316}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45ABC7E1-B169-4C9A-BF71-AE649A47A316}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 EndGlobal
