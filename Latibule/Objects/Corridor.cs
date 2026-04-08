@@ -1,12 +1,13 @@
-﻿using Latibule.Core.Components;
+﻿using Engine.Components;
+using Engine.Core.ECS;
+using Engine.Data;
+using Engine.Rendering;
 using Latibule.Core.Data;
-using Latibule.Core.ECS;
-using Latibule.Core.Rendering;
 using OpenTK.Mathematics;
 
 namespace Latibule.Objects;
 
-public class Corridor(Shader shader) : GameObject()
+public class Corridor : GameObject
 {
     public override void OnLoad()
     {

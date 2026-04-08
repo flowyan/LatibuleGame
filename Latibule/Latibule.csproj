@@ -14,14 +14,6 @@
         <None Include="Assets\**\*">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
-        <None Include="lib\steamaudio\windows-x64\**\*">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
-        </None>
-        <None Include="lib\steamaudio\linux-x64\**\*">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
-        </None>
     </ItemGroup>
 
     <ItemGroup>
@@ -35,5 +27,13 @@
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12"/>
         <PackageReference Include="StbImageSharp" Version="2.30.15"/>
         <PackageReference Include="SteamAudio.NET" Version="4.6.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Engine\Engine.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Assets\shader\" />
     </ItemGroup>
 </Project>

@@ -1,7 +1,11 @@
 ﻿using System.Diagnostics;
+using Engine;
+using Engine.Components;
+using Engine.Core;
+using Engine.Core.Types;
+using Engine.Data;
 using JetBrains.Annotations;
 using Latibule.Core;
-using Latibule.Core.Components;
 using Latibule.Core.Data;
 using Latibule.Core.Types;
 using OpenTK.Mathematics;
@@ -99,7 +103,7 @@ public class SvCheats : ICommand
         //     }
         // };
 
-        foreach (var gameWorldObject in LatibuleGame.GameWorld.Objects)
+        foreach (var gameWorldObject in LatibuleEngine.Map.Objects)
         {
             gameWorldObject.Get<TextureComponent>()?.Textures = [Asseteer.GetTexture(TextureAsset.missing)];
         }
@@ -110,9 +114,9 @@ public class SvCheats : ICommand
         foreach (var line in skull.Split("\n"))
         {
             LatibuleGame.Player.LookEnabled = false;
-            GameStates.CurrentGui = new DevConsole();
+            GameStates.CurrentGui = new DevConsoleWindow();
             DevConsole.Log(new ConsoleMessage(line, ConsoleMessageType.CommandOutput, new Vector4(1, 0, 0, 1)));
-            LatibuleGame.Player.Camera.View *= Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(5f));
+            LatibuleEngine.Camera.View *= Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(5f));
             await Task.Delay(50);
         }
 

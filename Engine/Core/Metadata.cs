@@ -1,0 +1,15 @@
+﻿namespace Engine.Core;
+
+public static class Metadata
+{
+    public const string ENGINE_NAME = "Latibule Engine";
+    public const string ENGINE_VERSION = "INDEV";
+    public const string DEVELOPERS_NAME = "BISMUTH";
+
+    public const string ASSETS_ROOT_DIRECTORY = "Assets";
+    public const string ASSETS_TEXTURE_PATH = "texture";
+    public const string ASSETS_SOUND_PATH = "sound";
+    public const string ASSETS_SHADER_PATH = "shader";
+    public const string ASSETS_FONT_PATH = "font";
+    public const string ASSETS_MODEL_PATH = "model";
+}

@@ -1,7 +1,8 @@
-﻿using JetBrains.Annotations;
-using Latibule.Core.Rendering;
-using Latibule.Core.Types;
-using static Latibule.Core.Logger;
+﻿using Engine;
+using Engine.Core.Types;
+using Engine.Rendering;
+using JetBrains.Annotations;
+using static Engine.Core.Logger;
 
 namespace Latibule.Commands;
 
@@ -15,15 +16,16 @@ public class ReloadWorld : ICommand
     public Task Execute(string[] args)
     {
         var player = LatibuleGame.Player;
+        var camera = LatibuleEngine.Camera;
         var noclip = LatibuleGame.Player.IsNoclip;
-        LatibuleGame.GameWorld = new World();
-        LatibuleGame.GameWorld = TestWorld.Create();
-        LatibuleGame.GameWorld.OnLoad();
+        LatibuleEngine.Map = new GameMap();
+        LatibuleEngine.Map = TestingMap.Create();
+        LatibuleEngine.Map.OnLoad();
         LogWarning("RECREATING WORLD");
         LatibuleGame.Player.Transform = player.Transform;
-        LatibuleGame.Player.Camera.Direction = player.Camera.Direction;
-        LatibuleGame.Player.Camera.Position = player.Camera.Position;
-        LatibuleGame.Player.Camera.View = player.Camera.View;
+        LatibuleEngine.Camera.Direction = camera.Direction;
+        LatibuleEngine.Camera.Position = camera.Position;
+        LatibuleEngine.Camera.View = camera.View;
         LatibuleGame.Player.IsNoclip = noclip;
         return Task.CompletedTask;
     }

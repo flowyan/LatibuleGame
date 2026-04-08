@@ -11,9 +11,6 @@ public static class GameOptions
     public static int FogStartDistance = 0;
     public static int FogEndDistance = 128;
 
-    // Mouse
-    public static float MouseSensitivity = 0.002f;
-
     // Volume
     public static float SoundVolume = 0.75f;
     public static float MusicVolume = 0.5f;

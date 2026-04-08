@@ -4,5 +4,7 @@ public enum ModelAsset
 {
     utahteapot,
     maxwell,
-    sponza
+    // sponza,
+
+    gun
 }

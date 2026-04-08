@@ -9,10 +9,14 @@ public enum TextureAsset
     material_stone,
     material_tiles,
     material_concrete,
+    material_metal,
 
     // MISC //
     misc_tequila,
     misc_speaker,
+
+    // HEYO //
+    heyo_greensquare,
 
     // DEV //
     dev_pointlight,

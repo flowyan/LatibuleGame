@@ -6,4 +6,5 @@ public enum SoundAsset
     tada,
     sleepphonk,
     scarletfire,
+    meow
 }

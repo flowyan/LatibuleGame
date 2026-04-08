@@ -1,4 +1,6 @@
 ﻿using System.Numerics;
+using Engine.Core;
+using Engine.Core.Types;
 using JetBrains.Annotations;
 using Latibule.Core;
 using Latibule.Core.Gameplay;

@@ -2,7 +2,5 @@
 
 public enum ShaderAsset
 {
-    debugui_debugLines,
-    mesh_shader,
-    text_shader
+    
 }

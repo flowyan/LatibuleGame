@@ -1,13 +1,14 @@
+using Engine;
+using Engine.Core;
+using Engine.Core.ECS;
+using Engine.Physics;
+using Engine.Utilities;
+using Latibule.Components;
 using Latibule.Core;
-using Latibule.Core.Data;
-using Latibule.Core.ECS;
 using Latibule.Core.Gameplay;
-using Latibule.Core.Physics;
 using Latibule.Core.Types;
-using Latibule.Utilities;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
 namespace Latibule.Entities;
@@ -23,9 +24,10 @@ public class Player : GameObject
     }
 
     private Vector3 CameraPosition => new(RawPosition.X, EyePosition.Y, RawPosition.Z);
-    public Camera Camera { get; private set; }
     public PlayerPhysics Physics { get; private set; }
     public BoundingBox BoundingBox { get; private set; }
+
+    public static Inventory Inventory { get; set; } = new();
 
     // Player dimensions
     private const float Width = 0.6f;
@@ -65,14 +67,18 @@ public class Player : GameObject
     public Player()
     {
         var direction = Vector3Direction.Forward;
-        Camera = new Camera(CameraPosition, direction, EyePosition);
+        LatibuleEngine.Camera = new Camera(CameraPosition, direction, EyePosition,
+            EngineStates.GameWindow.ClientSize.X / (float)EngineStates.GameWindow.ClientSize.Y);
+        Physics = new PlayerPhysics(this);
     }
 
     public override void OnLoad()
     {
         base.OnLoad();
 
-        Physics = new PlayerPhysics(this);
+        WithComponents([
+            new ViewModelComponent()
+        ]);
 
         // Initialize position and orientation
         StartingCoords = Transform.Position;
@@ -88,7 +94,18 @@ public class Player : GameObject
             UpdateBoundingBox();
         });
         Input.BindKeyPressed(Keys.V, ToggleNoclip);
-        Input.BindKeyPressed(Keys.P, () => Punch(Camera.Direction, 15f));
+        Input.BindKeyPressed(Keys.P, () => Punch(LatibuleEngine.Camera.Direction, 15f));
+
+        Input.BindKeyPressed(Keys.D1, () => Inventory.SelectedItemIndex = 1);
+        Input.BindKeyPressed(Keys.D2, () => Inventory.SelectedItemIndex = 2);
+        Input.BindKeyPressed(Keys.D3, () => Inventory.SelectedItemIndex = 3);
+        Input.BindKeyPressed(Keys.D4, () => Inventory.SelectedItemIndex = 4);
+        Input.BindKeyPressed(Keys.D5, () => Inventory.SelectedItemIndex = 5);
+        Input.BindKeyPressed(Keys.D6, () => Inventory.SelectedItemIndex = 6);
+        Input.BindKeyPressed(Keys.D7, () => Inventory.SelectedItemIndex = 7);
+        Input.BindKeyPressed(Keys.D8, () => Inventory.SelectedItemIndex = 8);
+        Input.BindKeyPressed(Keys.D9, () => Inventory.SelectedItemIndex = 9);
+        Input.BindKeyPressed(Keys.D0, () => Inventory.SelectedItemIndex = -1);
     }
 
     public void ToggleNoclip()
@@ -121,8 +138,8 @@ public class Player : GameObject
     private void UpdateCamera(FrameEventArgs args)
     {
         if (!LookEnabled) return;
-        Camera.Position = CameraPosition;
-        Camera.Update(args);
+        LatibuleEngine.Camera.Position = CameraPosition;
+        LatibuleEngine.Camera.Update();
     }
 
     public override void OnUpdateFrame(FrameEventArgs args)
@@ -136,26 +153,22 @@ public class Player : GameObject
 
         var deltaTime = (float)args.Time;
 
-        // Update the hit result for the current frame
-        PushBackIfAtWorldEdge();
-
-
-        var ms = GameStates.MState;
+        var ms = EngineStates.MState;
 
         if (ms.IsButtonDown(MouseButton.Left) && Controls.Cooldown(200)) LeftClickAction();
         if (ms.WasButtonDown(MouseButton.Left) && ms.IsButtonReleased(MouseButton.Left)) Controls.ResetCooldown();
-        if (ms.IsButtonDown(MouseButton.Left) && Controls.Cooldown(200)) RightClickAction();
+        if (ms.IsButtonDown(MouseButton.Right) && Controls.Cooldown(200)) RightClickAction();
         if (ms.WasButtonDown(MouseButton.Right) && ms.IsButtonReleased(MouseButton.Right)) Controls.ResetCooldown();
         if (Input.IsKeyDown(Keys.LeftShift) || Input.IsKeyDown(Keys.LeftControl)) IsSneaking = true;
+
         else IsSneaking = false;
 
         if (IsNoclip)
         {
             // Allow flying in all directions, ignore gravity and collisions
-            // WASD for horizontal, Space for up, LeftShift for down
             Vector3 flyMove = Vector3.Zero;
             var flySpeed = 12f; // Flying speed
-            var forward = Vector3.Normalize(new Vector3(Camera.Direction.X, 0, Camera.Direction.Z));
+            var forward = Vector3.Normalize(new Vector3(LatibuleEngine.Camera.Direction.X, 0, LatibuleEngine.Camera.Direction.Z));
             var right = Vector3.Normalize(Vector3.Cross(forward, Vector3Direction.Up));
             if (Input.IsKeyDown(Keys.W)) flyMove += forward;
             if (Input.IsKeyDown(Keys.S)) flyMove -= forward;
@@ -201,14 +214,6 @@ public class Player : GameObject
             Transform.Position = new Vector3(Transform.Position.X, 100, Transform.Position.Z);
     }
 
-    private void PushBackIfAtWorldEdge()
-    {
-        // if (Engine.WorldLevelManager.Current.GetPlayerChunk(new BlockCoord(Position)) == null)
-        // {
-        //     Position = Vector3.Lerp(Position, new Vector3(0, Transform.Position.Y, 0), 0.02f);
-        // }
-    }
-
     private void ApplyMovementInput(float deltaTime)
     {
         if (!CanMove)
@@ -219,7 +224,7 @@ public class Player : GameObject
         }
 
         // Calculate forward and right vectors for movement
-        var forward = Vector3.Normalize(new Vector3(Camera.Direction.X, 0, Camera.Direction.Z));
+        var forward = Vector3.Normalize(new Vector3(LatibuleEngine.Camera.Direction.X, 0, LatibuleEngine.Camera.Direction.Z));
         var right = Vector3.Normalize(Vector3.Cross(forward, Vector3Direction.Up));
 
         // Determine if movement keys are pressed
@@ -407,7 +412,7 @@ public class Player : GameObject
             bottomCorners[i] = corner;
         }
 
-        var boxes = LatibuleGame.GameWorld.GetBoundingBoxes();
+        var boxes = LatibuleEngine.Map.GetBoundingBoxes();
 
         foreach (var box in boxes)
         {
@@ -432,15 +437,6 @@ public class Player : GameObject
         }
     }
 
-    public void LeftClickAction()
-    {
-        Console.WriteLine("left click action");
-        Asseteer.PlaySound(SoundAsset.missing, volume: 0.5f);
-    }
-
-    public void RightClickAction()
-    {
-        Console.WriteLine("right click action");
-        Asseteer.PlaySound(SoundAsset.missing, volume: 0.5f);
-    }
+    private static void LeftClickAction() => Inventory.SelectedItem()?.Use();
+    private static void RightClickAction() => Inventory.SelectedItem()?.SecondaryUse();
 }

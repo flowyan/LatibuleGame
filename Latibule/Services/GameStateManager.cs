@@ -1,5 +1,6 @@
-﻿using System.Reflection;
-using ImGuiNET;
+﻿using System.Text;
+using Engine.Core;
+using Engine.Core.Types;
 using Latibule.Commands;
 using Latibule.Core;
 using Latibule.Core.Types;
@@ -13,10 +14,6 @@ public static class GameStateManager
 {
     public static void Initialize(GameWindow gameWindow)
     {
-        GameStates.Initialize(gameWindow);
-        GameStates.GameWindow = gameWindow;
-        Input.Initialize(gameWindow.KeyboardState);
-
         // Init binds
         Input.BindComboPressed(
             Keys.Escape,
@@ -24,15 +21,15 @@ public static class GameStateManager
             Keys.LeftShift
         );
         Input.BindKeyPressed(Keys.F1, () => GameStates.ShowHud = !GameStates.ShowHud);
-        Input.BindKeyPressed(Keys.F3, () => GameStates.EnabledDebugOverlays[DebugOverlayType.Info] = !GameStates.EnabledDebugOverlays[DebugOverlayType.Info]);
+        Input.BindKeyPressed(Keys.F3, () => EngineStates.EnabledDebugOverlays[DebugOverlayType.Info] = !EngineStates.EnabledDebugOverlays[DebugOverlayType.Info]);
         Input.BindComboPressed(
             Keys.B,
-            () => GameStates.EnabledDebugOverlays[DebugOverlayType.BoundingBoxes] = !GameStates.EnabledDebugOverlays[DebugOverlayType.BoundingBoxes],
+            () => EngineStates.EnabledDebugOverlays[DebugOverlayType.BoundingBoxes] = !EngineStates.EnabledDebugOverlays[DebugOverlayType.BoundingBoxes],
             Keys.F3
         );
         Input.BindComboPressed(
             Keys.L,
-            () => GameStates.EnabledDebugOverlays[DebugOverlayType.PointLights] = !GameStates.EnabledDebugOverlays[DebugOverlayType.PointLights],
+            () => EngineStates.EnabledDebugOverlays[DebugOverlayType.PointLights] = !EngineStates.EnabledDebugOverlays[DebugOverlayType.PointLights],
             Keys.F3
         );
         Input.BindKeyPressed(Keys.F5, () => new ReloadWorld().Execute([]));
@@ -40,18 +37,24 @@ public static class GameStateManager
 
         Input.BindKeyPressed(Keys.GraveAccent, () =>
         {
-            if (GameStates.CurrentGui == null) SetUiOnScreen(new DevConsole(), imgui: true);
+            if (GameStates.CurrentGui == null) SetUiOnScreen(new DevConsoleWindow(), imgui: true);
         });
 
         Input.BindKeyPressed(Keys.Escape, () =>
         {
             if (GameStates.CurrentGui != null) SetUiOnScreen();
         });
+
+        // Check for a developer key
+        var keyBase64 = Convert.FromBase64String("aWFtdGhlb25ld2hva25vY2tz");
+        var key = Encoding.UTF8.GetString(keyBase64);
+        if (File.Exists("key.txt")) GameStates.HasDeveloperKey = File.ReadAllText("key.txt") == key;
+        if (Environment.GetEnvironmentVariable("DEV_KEY") != null) GameStates.HasDeveloperKey = Environment.GetEnvironmentVariable("DEV_KEY") == key;
+        if (GameStates.HasDeveloperKey) Logger.LogInfo("Developer key found. Developer tools granted.");
     }
 
     public static void Update(GameWindow gameWindow)
     {
-        GameStates.GameWindow = gameWindow;
     }
 
     public static void SetUiOnScreen(IGuiScreen? gui = null, bool imgui = false)
@@ -59,18 +62,17 @@ public static class GameStateManager
         if (gui?.GetType() == GameStates.CurrentGui?.GetType() || gui == null)
         {
             // If the same GUI is requested, toggle it off
-            Logger.LogDebug($"Hiding GUI: {GameStates.CurrentGui?.GetType().Name}", logToDevConsole: gui is DevConsole);
-            GameStates.MouseLookLocked = false;
-            GameStates.GameWindow.CursorState = CursorState.Grabbed;
+            Logger.LogDebug($"Hiding GUI: {GameStates.CurrentGui?.GetType().Name}", logToDevConsole: gui is DevConsoleWindow);
+            EngineStates.MouseLookLocked = false;
+            EngineStates.GameWindow.CursorState = CursorState.Grabbed;
             GameStates.CurrentGui = null;
-            // ImGuiStopTextInput();
         }
         else if (GameStates.CurrentGui == null)
         {
             gui.Initialize();
-            Logger.LogDebug($"Showing GUI: {gui.GetType().Name}", logToDevConsole: gui is not DevConsole);
-            GameStates.MouseLookLocked = true;
-            GameStates.GameWindow.CursorState = CursorState.Normal;
+            Logger.LogDebug($"Showing GUI: {gui.GetType().Name}", logToDevConsole: gui is not DevConsoleWindow);
+            EngineStates.MouseLookLocked = true;
+            EngineStates.GameWindow.CursorState = CursorState.Normal;
             GameStates.CurrentGui = gui;
         }
     }
