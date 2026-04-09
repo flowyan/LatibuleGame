@@ -1,21 +1,24 @@
 ﻿using System.ComponentModel;
 using System.Drawing;
+using Engine.Core;
 using Engine.Core.ImGuiNet;
 using Engine.Data;
+using Engine.Physics;
 using Engine.Rendering;
 using Engine.Rendering.Renderer;
 using Engine.Services;
 using ImGuiNET;
+using JoltPhysicsSharp;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using static Engine.Core.Logger;
 
-namespace Engine.Core;
+namespace Engine;
 
 public class EngineWindow : GameWindow
 {
-    public static readonly bool IS_EDITOR = Environment.GetEnvironmentVariable("MALLET_INSTANCE")  is not null;
+    public static readonly bool IS_EDITOR = Environment.GetEnvironmentVariable("MALLET_INSTANCE") is not null;
 
     private static Asseteer Asseteer { get; } = new(new AsseteerPaths(
         Metadata.ASSETS_ROOT_DIRECTORY,
