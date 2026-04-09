@@ -1,9 +1,11 @@
-﻿using Engine;
-using Engine.Core;
+﻿using System.Numerics;
+using Engine;
 using Engine.Core.ImGuiNet;
 using Engine.Data;
+using Engine.Physics;
 using ImGuiNET;
 using Latibule.Entities;
+using Latibule.Maps;
 using Latibule.Services;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
@@ -14,7 +16,8 @@ namespace Latibule;
 
 public class LatibuleGame : EngineWindow
 {
-    public static Player Player { get; internal set; }
+    public static Player Player { get; internal set; } = null!;
+    public static JoltPhysics Physics { get; private set; } = new();
 
     public LatibuleGame(NativeWindowSettings nativeWindowSettings) : base(
         new GameWindowSettings
@@ -34,9 +37,14 @@ public class LatibuleGame : EngineWindow
     {
         base.OnLoad();
 
+        // Setup physics after assets are loaded (shaders needed for debug renderer)
+        Physics.SetupJoltPhysics();
+
         // Load the essential assets
         CursorState = CursorState.Grabbed;
-        LatibuleEngine.Map = TestingMap.Create();
+        // LatibuleEngine.Map = TestingMap.Create();
+
+        LatibuleEngine.Map = PhysicsTestMap.Create();
         LatibuleEngine.Map.OnLoad();
 
         // Asseteer.PlaySteamAudioSound(SoundAsset.scarletfire, new Vector3(0, 1, -7.5f), 0.75f);
@@ -50,6 +58,8 @@ public class LatibuleGame : EngineWindow
         GameStateManager.Update(this);
         LatibuleEngine.Map.OnUpdateFrame(args);
 
+        Physics.OnUpdateFrame(args);
+
         // Core.SteamAudio.SetListenerPosition(Player.Transform.Position, Player.Camera.Direction, Vector3Direction.Up);
     }
 
@@ -57,6 +67,7 @@ public class LatibuleGame : EngineWindow
     {
         base.OnRenderFrameAfterQueue(args);
         RenderGui(args);
+        Physics.OnRenderFrame(args);
     }
 
     private static void RenderGui(FrameEventArgs args)

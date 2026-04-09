@@ -1,4 +1,5 @@
 ﻿using Engine.Rendering;
+using JoltPhysicsSharp;
 using OpenTK.Windowing.Common;
 
 namespace Engine.Core.ECS;
@@ -8,6 +9,7 @@ public class GameObject() : IDisposable
     public Transform Transform { get; set; } = new();
     public GameObject? Parent { get; private set; }
     public GameObject[] Children { get; private set; } = Array.Empty<GameObject>();
+    public BodyID? PhysicsBodyID { get; set; }
 
     private readonly Dictionary<Type, IComponent> _byType = new();
 

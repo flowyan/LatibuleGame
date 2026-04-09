@@ -3,6 +3,7 @@ using Engine.Core;
 using Engine.Core.ECS;
 using Engine.Physics;
 using Engine.Utilities;
+using JoltPhysicsSharp;
 using Latibule.Components;
 using Latibule.Core;
 using Latibule.Core.Gameplay;
@@ -10,6 +11,7 @@ using Latibule.Core.Types;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using BoundingBox = Engine.Physics.BoundingBox;
 
 namespace Latibule.Entities;
 
@@ -24,8 +26,7 @@ public class Player : GameObject
     }
 
     private Vector3 CameraPosition => new(RawPosition.X, EyePosition.Y, RawPosition.Z);
-    public PlayerPhysics Physics { get; private set; }
-    public BoundingBox BoundingBox { get; private set; }
+    public Character Body { get; private set; }
 
     public static Inventory Inventory { get; set; } = new();
 
@@ -69,7 +70,21 @@ public class Player : GameObject
         var direction = Vector3Direction.Forward;
         LatibuleEngine.Camera = new Camera(CameraPosition, direction, EyePosition,
             EngineStates.GameWindow.ClientSize.X / (float)EngineStates.GameWindow.ClientSize.Y);
-        Physics = new PlayerPhysics(this);
+
+        var characterSettings = new CharacterSettings
+        {
+            Shape = new BoxShape(new Vector3(0.75f, 2f, 0.75f).ToNumerics()),
+            Layer = JoltPhysics.Layers.Moving,
+            EnhancedInternalEdgeRemoval = true,
+            Mass = 70f,
+        };
+
+        var position = RawPosition.ToNumerics();
+        var transformRotation = System.Numerics.Quaternion.Identity;
+        Body = new Character(characterSettings, in position, in transformRotation, 0, LatibuleGame.Physics.PhysicsSystem);
+        Body.AddToPhysicsSystem();
+        LatibuleGame.Physics._bodies.Add(Body.BodyID);
+        LatibuleGame.Physics._ignoreDrawBodies.Add(Body.BodyID);
     }
 
     public override void OnLoad()
@@ -118,24 +133,29 @@ public class Player : GameObject
     {
         // Calculate the minimum corner for BoundingBox (not the center)
         // Center the bounding box horizontally around the player's position
-        var min = new Vector3(
-            Transform.Position.X - (Width / 2f),
-            Transform.Position.Y, // Feet at bottom of bounding box
-            Transform.Position.Z - (Depth / 2f)
-        );
+        // var min = new Vector3(
+        //     Transform.Position.X - (Width / 2f),
+        //     Transform.Position.Y, // Feet at bottom of bounding box
+        //     Transform.Position.Z - (Depth / 2f)
+        // );
+        //
+        // var height = IsSneaking ? HeightSneak : Height; // Adjust height for sneaking
+        //
+        // var max = new Vector3(
+        //     Transform.Position.X + (Width / 2f),
+        //     Transform.Position.Y + height, // Top of bounding box
+        //     Transform.Position.Z + (Depth / 2f)
+        // );
+        //
+        // Body = new BoundingBox(min, max);
 
-        var height = IsSneaking ? HeightSneak : Height; // Adjust height for sneaking
+        Body.SetPositionAndRotation(Transform.Position.ToNumerics(), System.Numerics.Quaternion.Identity);
+        // RawPosition = Body.GetPosition().ToOpenTK();
 
-        var max = new Vector3(
-            Transform.Position.X + (Width / 2f),
-            Transform.Position.Y + height, // Top of bounding box
-            Transform.Position.Z + (Depth / 2f)
-        );
-
-        BoundingBox = new BoundingBox(min, max);
+        Body.SetLinearVelocity(Velocity.ToNumerics());
     }
 
-    private void UpdateCamera(FrameEventArgs args)
+    private void UpdateCamera()
     {
         if (!LookEnabled) return;
         LatibuleEngine.Camera.Position = CameraPosition;
@@ -179,7 +199,7 @@ public class Player : GameObject
             if (flyMove != Vector3.Zero) flyMove = Vector3.Normalize(flyMove);
             RawPosition += flyMove * flySpeed * deltaTime;
             UpdateBoundingBox();
-            UpdateCamera(args);
+            UpdateCamera();
             return;
         }
 
@@ -187,7 +207,7 @@ public class Player : GameObject
         ApplyMovementInput(deltaTime);
 
         // Apply gravity to vertical velocity
-        ApplyGravity(deltaTime);
+        // ApplyGravity(deltaTime);
 
         // Handle jumping input (only sets velocity, doesn't move yet)
         HandleJumpInput(deltaTime);
@@ -205,7 +225,9 @@ public class Player : GameObject
         if (CollisionEnabled) HandleCollisions(displacement, deltaTime);
         else RawPosition += displacement;
 
-        UpdateCamera(args);
+        IsGrounded = Body.GroundState == GroundState.OnGround;
+
+        UpdateCamera();
 
         // Update the bounding box after position changes
         UpdateBoundingBox();
@@ -372,70 +394,70 @@ public class Player : GameObject
 
             // Update bounding box and check for collisions
             UpdateBoundingBox();
-            Physics.ResolveCollisions();
+            // Physics.ResolveCollisions();
         }
 
-        // Then, try to move vertically (Y)
+        // // Then, try to move vertically (Y)
         RawPosition = RawPosition with { Y = RawPosition.Y + intendedDisplacement.Y };
         UpdateBoundingBox();
-        Physics.ResolveCollisions();
-
-        // Check for grounded state by casting a ray slightly below the player
-        CheckGrounded();
+        // Physics.ResolveCollisions();
+        //
+        // // Check for grounded state by casting a ray slightly below the player
+        // CheckGrounded();
     }
 
-    private void CheckGrounded()
-    {
-        const float groundCheckDistance = 0.15f;
-        const float inwardOffset = 0.01f;
-
-        var allCorners = BoundingBox.GetCorners();
-        var bottomCorners = new Vector3[4];
-        bottomCorners[0] = allCorners[2];
-        bottomCorners[1] = allCorners[3];
-        bottomCorners[2] = allCorners[6];
-        bottomCorners[3] = allCorners[7];
-
-        var center = BoundingBox.Center;
-
-        // Move corners slightly inward on X and Z
-        for (var i = 0; i < bottomCorners.Length; i++)
-        {
-            var corner = bottomCorners[i];
-
-            var dirX = MathF.Sign(center.X - corner.X);
-            var dirZ = MathF.Sign(center.Z - corner.Z);
-
-            corner.X += dirX * inwardOffset;
-            corner.Z += dirZ * inwardOffset;
-
-            bottomCorners[i] = corner;
-        }
-
-        var boxes = LatibuleEngine.Map.GetBoundingBoxes();
-
-        foreach (var box in boxes)
-        {
-            foreach (var corner in bottomCorners)
-            {
-                var rayStart = corner + new Vector3(0, 0.14f, 0);
-                var rayEnd = rayStart - new Vector3(0, groundCheckDistance, 0);
-
-                if (!AabbHelper.RayIntersectsAabb(rayStart, rayEnd, box, out var hitPoint, out _))
-                    continue;
-
-                IsGrounded = true;
-
-                var distanceToGround = rayStart.Y - hitPoint.Y;
-                if (distanceToGround >= 0.0001f)
-                    return;
-
-                RawPosition = RawPosition with { Y = hitPoint.Y + 0.0001f };
-                UpdateBoundingBox();
-                return;
-            }
-        }
-    }
+    // private void CheckGrounded()
+    // {
+    //     const float groundCheckDistance = 0.15f;
+    //     const float inwardOffset = 0.01f;
+    //
+    //     var allCorners = BoundingBox.GetCorners();
+    //     var bottomCorners = new Vector3[4];
+    //     bottomCorners[0] = allCorners[2];
+    //     bottomCorners[1] = allCorners[3];
+    //     bottomCorners[2] = allCorners[6];
+    //     bottomCorners[3] = allCorners[7];
+    //
+    //     var center = BoundingBox.Center;
+    //
+    //     // Move corners slightly inward on X and Z
+    //     for (var i = 0; i < bottomCorners.Length; i++)
+    //     {
+    //         var corner = bottomCorners[i];
+    //
+    //         var dirX = MathF.Sign(center.X - corner.X);
+    //         var dirZ = MathF.Sign(center.Z - corner.Z);
+    //
+    //         corner.X += dirX * inwardOffset;
+    //         corner.Z += dirZ * inwardOffset;
+    //
+    //         bottomCorners[i] = corner;
+    //     }
+    //
+    //     var boxes = LatibuleEngine.Map.GetBoundingBoxes();
+    //
+    //     foreach (var box in boxes)
+    //     {
+    //         foreach (var corner in bottomCorners)
+    //         {
+    //             var rayStart = corner + new Vector3(0, 0.14f, 0);
+    //             var rayEnd = rayStart - new Vector3(0, groundCheckDistance, 0);
+    //
+    //             if (!AabbHelper.RayIntersectsAabb(rayStart, rayEnd, box, out var hitPoint, out _))
+    //                 continue;
+    //
+    //             IsGrounded = true;
+    //
+    //             var distanceToGround = rayStart.Y - hitPoint.Y;
+    //             if (distanceToGround >= 0.0001f)
+    //                 return;
+    //
+    //             RawPosition = RawPosition with { Y = hitPoint.Y + 0.0001f };
+    //             UpdateBoundingBox();
+    //             return;
+    //         }
+    //     }
+    // }
 
     private static void LeftClickAction() => Inventory.SelectedItem()?.Use();
     private static void RightClickAction() => Inventory.SelectedItem()?.SecondaryUse();
