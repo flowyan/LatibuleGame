@@ -4,10 +4,12 @@ using Engine.Components;
 using Engine.Core;
 using Engine.Core.Types;
 using Engine.Data;
+using Engine.Data.Sound;
+using Engine.Data.Textures;
 using JetBrains.Annotations;
 using Latibule.Core;
-using Latibule.Core.Data;
-using Latibule.Core.Types;
+using Latibule.Data.Sound;
+using Latibule.Data.Texture;
 using OpenTK.Mathematics;
 using Vector4 = System.Numerics.Vector4;
 
@@ -105,10 +107,10 @@ public class SvCheats : ICommand
 
         foreach (var gameWorldObject in LatibuleEngine.Map.Objects)
         {
-            gameWorldObject.Get<TextureComponent>()?.Textures = [Asseteer.GetTexture(TextureAsset.missing)];
+            gameWorldObject.Get<TextureComponent>()?.Textures = [Asseteer.GetTexture(EngineTextures.Dev.missing)];
         }
 
-        Asseteer.PlaySound(SoundAsset.missing, randomPitch: false);
+        Asseteer.PlaySound(EngineSounds.Dev.missing, randomPitch: false);
 
         // slowly writes the skull to the console
         foreach (var line in skull.Split("\n"))
@@ -125,7 +127,7 @@ public class SvCheats : ICommand
         DevConsole.CommandLog("fuck you");
         await Task.Delay(100);
 
-        var username = System.Environment.UserName;
+        var username = Environment.UserName;
         var command =
             "$ErrorActionPreference = \\\"Stop\\\"; " +
             $"$notificationTitle = \\\"i am inside your house {username}\\\"; " +

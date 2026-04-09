@@ -1,7 +1,9 @@
-﻿using Assimp;
+﻿using System.Reflection;
+using Assimp;
 using Assimp.Configs;
 using Engine.Audio;
 using Engine.Core;
+using Engine.Data.Shaders;
 using Engine.Rendering;
 using Engine.Rendering.Text;
 using FontStashSharp;
@@ -23,7 +25,7 @@ public class Asseteer(AsseteerPaths paths)
 
     // keyed by texture path
     private static readonly Dictionary<string, Texture> LoadedTextures = [];
-    private static readonly Dictionary<string, WaveStream> LoadedSoundsList = [];
+    private static readonly Dictionary<string, Func<WaveStream>> LoadedSoundsList = [];
     private static readonly Dictionary<string, Shader> LoadedShaders = [];
     private static readonly Dictionary<string, Scene> LoadedModels = [];
 
@@ -80,69 +82,103 @@ public class Asseteer(AsseteerPaths paths)
         foreach (var file in textureDir.EnumerateFiles(searchPattern: "*.*", searchOption: SearchOption.AllDirectories))
         {
             var parentFolderName = file.Directory?.Name == paths.TextureDirectory ? "" : $"{file.Directory?.Name}/";
-            var textureName = $"{parentFolderName}{file.Name.Replace(file.Extension, "")}";
+            var texturePath = $"{parentFolderName}{file.Name.Replace(file.Extension, "")}";
             try
             {
                 var texture = new Texture($"{paths.RootDirectory}/{paths.TextureDirectory}/{parentFolderName}{file.Name}");
-                LoadedTextures[textureName] = texture;
+                LoadedTextures[texturePath] = texture;
                 // LoadedImGuiTextures[textureName] = LatibuleGame.ImGuiRenderer.BindTexture(LoadedTextures[textureName]);
-                LogInfo($"Loaded texture: {textureName} ({file.Name})");
+                LogInfo($"Loaded texture: {texturePath} ({file.Name})");
             }
             catch (Exception e)
             {
-                LogError($"Failed to load texture: {textureName} ({file.Name}) - {e}");
+                LogError($"Failed to load texture: {texturePath} ({file.Name}) - {e}");
             }
         }
     }
 
-    public static Texture GetTexture(dynamic textureAsset)
+    public static Texture GetTexture<TEnum>(TEnum textureAsset) where TEnum : struct, Enum
     {
-        // parse the texture path and return the texture
-        var textureName = textureAsset.ToString().Replace("_", "/");
-        try
-        {
-            return LoadedTextures[textureName];
-        }
-        catch (Exception e)
-        {
-            LogError(e.Message);
-            return GetTexture("missing");
-        }
+        var enumType = typeof(TEnum);
+        var enumTypeName = enumType.Name.ToLowerInvariant(); // Dev -> dev
+        var assetName = textureAsset.ToString(); // dev_measuregeneric01
+
+        var texturePath = $"{enumTypeName}/{assetName}";
+
+        if (LoadedTextures.TryGetValue(texturePath, out var texture))
+            return texture;
+
+        LogError($"Texture '{texturePath}' was not found.");
+        return GetMissingTexture();
     }
 
-    public static Texture[] GetTextures(dynamic[] textureAssets)
+    private static Texture GetMissingTexture()
     {
-        var textureNames = textureAssets.Select(x => x.ToString().Replace("_", "/"));
-        return LoadedTextures.Where(x => textureNames.Contains(x.Key)).Select(x => x.Value).ToArray();
+        return LoadedTextures.TryGetValue("missing", out var missing) ? missing : throw new InvalidOperationException("Missing texture was not loaded.");
+    }
+
+    public static Texture[] GetTextures<TEnum>(params TEnum[] textureAssets)
+        where TEnum : struct, Enum
+    {
+        return textureAssets
+            .Select(textureAsset =>
+            {
+                var enumType = typeof(TEnum);
+                var folder = enumType.Name.ToLowerInvariant();
+                var file = textureAsset.ToString();
+
+                var path = $"{folder}/{file}";
+
+                if (LoadedTextures.TryGetValue(path, out var texture))
+                    return texture;
+
+                LogError($"Texture '{path}' was not found.");
+                return GetMissingTexture();
+            })
+            .ToArray();
     }
 
     private void LoadSounds()
     {
-        var dirPath = $"{paths.RootDirectory}/{paths.SoundDirectory}";
+        var dirPath = Path.Combine(paths.RootDirectory, paths.SoundDirectory);
         var soundDir = new DirectoryInfo(dirPath);
-        if (!soundDir.Exists) throw new Exception($"Missing sound directory: {soundDir.FullName}");
 
-        foreach (var file in soundDir.EnumerateFiles())
+        if (!soundDir.Exists)
+            throw new DirectoryNotFoundException($"Missing sound directory: {soundDir.FullName}");
+
+        foreach (var file in soundDir.EnumerateFiles("*", SearchOption.AllDirectories))
         {
-            var extension = file.Extension;
-            var soundName = file.Name.Replace(extension, "");
-            var soundPath = $"{dirPath}/{file.Name}";
+            var extension = file.Extension.ToLowerInvariant();
+
+            if (extension is not ".ogg" and not ".wav" and not ".mp3")
+                continue;
+
+            var relativePath = Path.GetRelativePath(dirPath, file.FullName);
+            var soundName = Path.ChangeExtension(relativePath, null)!
+                .Replace('\\', '/')
+                .ToLowerInvariant();
+
             try
             {
-                // todo: dont load readers, load smthing else cuz issues with looping and playback
-                LoadedSoundsList[soundName] = extension switch
-                {
-                    ".ogg" => new VorbisWaveReader(soundPath),
-                    _ => new AudioFileReader(soundPath)
-                };
-
+                LoadedSoundsList[soundName] = () => CreateSoundStream(file.FullName, extension);
                 LogInfo($"Loaded sound: {soundName} ({file.Name})");
             }
             catch (Exception e)
             {
-                LogError($"Failed to load sound: {soundName} ({file.Name}) - {e}");
+                LogError($"Failed to register sound: {soundName} ({file.Name}) - {e}");
             }
         }
+    }
+
+    private static WaveStream CreateSoundStream(string filePath, string extension)
+    {
+        return extension switch
+        {
+            ".ogg" => new VorbisWaveReader(filePath),
+            ".wav" => new AudioFileReader(filePath),
+            ".mp3" => new AudioFileReader(filePath),
+            _ => throw new NotSupportedException($"Unsupported sound format: {extension}")
+        };
     }
 
     private void LoadShaders()
@@ -152,6 +188,9 @@ public class Asseteer(AsseteerPaths paths)
 
         foreach (var file in shaderDir.EnumerateFiles(searchPattern: "*.*", searchOption: SearchOption.AllDirectories))
         {
+            // Only process .vert files to avoid loading the same shader twice (once from .vert, once from .frag)
+            if (file.Extension != ".vert") continue;
+
             var parentFolderName = file.Directory?.Name == paths.ShaderDirectory ? "" : $"{file.Directory?.Name}/";
             var shaderName = $"{parentFolderName}{file.Name.Replace(file.Extension, "")}";
             try
@@ -170,21 +209,25 @@ public class Asseteer(AsseteerPaths paths)
         }
     }
 
-    public static Shader GetShader(dynamic shaderAsset)
+    public static Shader GetShader(EngineShaders.EngineShader shaderAsset)
     {
-        var shaderName = shaderAsset.ToString().Replace("_", "/");
+        var shaderName = $"{shaderAsset.ToString().ToLowerInvariant()}/shader";
         var resolvedShaderName = ResolveShaderNameForContext(shaderName);
-        return LoadedShaders[resolvedShaderName];
+
+        if (LoadedShaders.TryGetValue(resolvedShaderName, out var shader))
+            return shader;
+
+        throw new KeyNotFoundException($"Shader '{resolvedShaderName}' was not found.");
     }
 
     private static string ResolveShaderNameForContext(string shaderName)
     {
-        // In editor mode, force all mesh-shader lookups to use the editor's unlit mesh shader.
-        if (!EngineWindow.IS_EDITOR) return shaderName;
-        if (shaderName != "mesh/shader") return shaderName;
+        if (!EngineWindow.IS_EDITOR || shaderName != "mesh/shader") return shaderName;
 
         const string editorMeshShaderName = "editormesh/shader";
-        if (LoadedShaders.ContainsKey(editorMeshShaderName)) return editorMeshShaderName;
+
+        if (LoadedShaders.ContainsKey(editorMeshShaderName))
+            return editorMeshShaderName;
 
         LogWarning($"Editor shader alias missing: '{editorMeshShaderName}'. Falling back to '{shaderName}'.");
         return shaderName;
@@ -243,19 +286,26 @@ public class Asseteer(AsseteerPaths paths)
         return LoadedModels[modelName];
     }
 
-    public static void PlaySound(dynamic soundAsset, float volume = 0.5f, bool randomPitch = true)
+    public static void PlaySound<TEnum>(TEnum soundAsset, float volume = 0.5f, bool randomPitch = true)
+        where TEnum : struct, Enum
     {
-        var outputDevice = new WaveOutEvent();
-        var soundName = soundAsset.ToString();
-        var sound = LoadedSoundsList[soundName];
-        // var loopStream = new LoopStream(sound);
-        // sound.Pitch = randomPitch ? (float)(new Random().NextDouble() * (PitchMax - PitchMin) + PitchMin) : 0;
+        var folder = typeof(TEnum).Name.ToLowerInvariant();
+        var file = soundAsset.ToString();
+        var soundName = $"{folder}/{file}";
 
-        outputDevice.PlaybackStopped += (sender, args) =>
+        if (!LoadedSoundsList.TryGetValue(soundName, out var soundFactory))
+        {
+            LogError($"Sound '{soundName}' was not found.");
+            return;
+        }
+
+        var sound = soundFactory();
+        var outputDevice = new WaveOutEvent();
+
+        outputDevice.PlaybackStopped += (_, _) =>
         {
             outputDevice.Dispose();
-            sound.Position = 0;
-            outputDevice = new WaveOutEvent();
+            sound.Dispose();
         };
 
         outputDevice.Init(sound);
@@ -263,28 +313,44 @@ public class Asseteer(AsseteerPaths paths)
         outputDevice.Play();
     }
 
-    public static void PlaySteamAudioSound(dynamic soundAsset, Vector3 soundPosition, float volume = 0.5f)
+    public static void PlaySteamAudioSound<TEnum>(TEnum soundAsset, Vector3 soundPosition, float volume = 0.5f)
+        where TEnum : struct, Enum
     {
-        var soundName = soundAsset.ToString();
-        var stream = LoadedSoundsList[soundName];
+        var folder = typeof(TEnum).Name.ToLowerInvariant();
+        var file = soundAsset.ToString();
+        var soundName = $"{folder}/{file}";
+
+        if (!LoadedSoundsList.TryGetValue(soundName, out var soundFactory))
+        {
+            LogError($"Sound '{soundName}' was not found.");
+            return;
+        }
+
+        var stream = soundFactory();
         var sp = stream.ToSampleProvider();
 
         if (sp.WaveFormat.SampleRate != Audio.SteamAudio.SamplingRate)
             sp = new WdlResamplingSampleProvider(sp, Audio.SteamAudio.SamplingRate);
 
         var spatial = new SteamAudioSampleProvider(sp, soundPosition, volume);
-
-        // Most reliable output path:
         IWaveProvider waveProvider = new SampleToWaveProvider24(spatial);
 
         var device = new NAudio.CoreAudioApi.MMDeviceEnumerator()
-            .GetDefaultAudioEndpoint(NAudio.CoreAudioApi.DataFlow.Render, NAudio.CoreAudioApi.Role.Multimedia);
+            .GetDefaultAudioEndpoint(
+                NAudio.CoreAudioApi.DataFlow.Render,
+                NAudio.CoreAudioApi.Role.Multimedia);
 
-        // TODO: switch to something crossplatform, probably OpenAL teehee
-        var outDevice = new WasapiOut(device,
+        var outDevice = new WasapiOut(
+            device,
             NAudio.CoreAudioApi.AudioClientShareMode.Shared,
             true,
             latency: 30);
+
+        outDevice.PlaybackStopped += (_, _) =>
+        {
+            outDevice.Dispose();
+            stream.Dispose();
+        };
 
         outDevice.Init(waveProvider);
         outDevice.Volume = volume;
