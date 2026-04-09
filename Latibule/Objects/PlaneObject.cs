@@ -1,8 +1,8 @@
 ﻿using Engine.Components;
 using Engine.Core.ECS;
 using Engine.Data;
+using Engine.Data.Shaders;
 using Engine.Rendering.Shapes;
-using Latibule.Core.Data;
 using OpenTK.Mathematics;
 
 namespace Latibule.Objects;
@@ -23,7 +23,7 @@ public class PlaneObject : GameObject
         base.OnLoad();
 
         WithComponents([
-            new ShaderComponent(Asseteer.GetShader(InternalShaderAsset.mesh_shader)),
+            new ShaderComponent(Asseteer.GetShader(EngineShaders.DefaultShader)),
             new ShapeRendererComponent(new PlaneShape()),
             new BoundingBoxComponent()
         ]);

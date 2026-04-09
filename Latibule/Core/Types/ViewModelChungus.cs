@@ -1,9 +1,9 @@
 ﻿using Assimp;
 using Engine.Core.ECS;
 using Engine.Data;
+using Engine.Data.Shaders;
 using Engine.Rendering;
 using Engine.Rendering.Renderer;
-using Latibule.Core.Data;
 using OpenTK.Mathematics;
 
 namespace Latibule.Core.Types;
@@ -20,7 +20,7 @@ public class ViewModelChungus
 
     public ViewModelChungus(Scene model, Texture[] textures, Vector3 position, Vector3 rotation, Vector3 scale)
     {
-        var _shader = Asseteer.GetShader(InternalShaderAsset.mesh_shader);
+        var _shader = Asseteer.GetShader(EngineShaders.DefaultShader);
         Model = model;
         Textures = textures;
         Position = position;

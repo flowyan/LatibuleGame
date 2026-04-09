@@ -4,6 +4,7 @@ using Engine.Core;
 using Engine.Core.ECS;
 using Engine.Core.Types;
 using Engine.Data;
+using Engine.Data.Shaders;
 using Engine.Rendering.Helpers;
 using FontStashSharp.Interfaces;
 using OpenTK.Graphics.OpenGL4;
@@ -40,7 +41,7 @@ public class FontStashRenderer : IFontStashRenderer2, IDisposable
         _indexBuffer = new BufferObject<short>(indexData.Length, BufferTarget.ElementArrayBuffer, false);
         _indexBuffer.SetData(indexData, 0, indexData.Length);
 
-        _shader = Asseteer.GetShader(InternalShaderAsset.text_shader);
+        _shader = Asseteer.GetShader(EngineShaders.Text);
         _shader.Use();
 
         _vao = new VertexArrayObject(sizeof(VertexPositionColorTexture));

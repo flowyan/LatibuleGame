@@ -1,5 +1,6 @@
 ﻿using Engine.Core.ECS;
 using Engine.Data;
+using Engine.Data.Textures;
 using Engine.Rendering.Helpers;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
@@ -21,7 +22,7 @@ public class ShapeRenderer : IRenderable, IDisposable
     {
         _shader = shader;
         _transform = transform;
-        _texture = texture ?? Asseteer.GetTexture(InternalTextureAsset.missing);
+        _texture = texture ?? Asseteer.GetTexture(EngineTextures.Dev.missing);
         var vertices = new VertexPositionTextureNormal[shape.Vertices.Length];
 
         // Prepare rotation if needed
@@ -92,7 +93,7 @@ public class ShapeRenderer : IRenderable, IDisposable
         var texCoordLocation = _shader.GetAttribLocation("aTexCoords");
         _vao.VertexAttribPointer(texCoordLocation, 2, VertexAttribPointerType.Float, false, sizeof(float) * 3);
     }
-    
+
     public void Render()
     {
         GL.Enable(EnableCap.CullFace);

@@ -26,4 +26,3 @@ public struct VertexPositionTextureNormal
         NZ = nz;
     }
 }
-

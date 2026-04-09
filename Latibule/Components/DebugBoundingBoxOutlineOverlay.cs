@@ -29,7 +29,7 @@ public class DebugBoundingBoxOutlineOverlay : BaseComponent
         GL.Enable(EnableCap.DepthTest); // occluded by world
         // GL.Disable(EnableCap.DepthTest);  // always visible
 
-        _renderer.Render(LatibuleGame.Player.BoundingBox, Color.White);
+        // _renderer.Render(LatibuleGame.Player.BoundingBox, Color.White);
 
         foreach (var boundingBox in LatibuleEngine.Map.GetBoundingBoxes())
             _renderer.Render(boundingBox, Color.Yellow);

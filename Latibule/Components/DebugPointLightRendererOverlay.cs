@@ -4,10 +4,10 @@ using Engine.Core;
 using Engine.Core.ECS;
 using Engine.Core.Types;
 using Engine.Data;
+using Engine.Data.Textures;
 using Engine.Rendering;
 using Engine.Rendering.Renderer;
 using Engine.Utilities;
-using Latibule.Core.Data;
 using Latibule.Core.Types;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
@@ -23,7 +23,7 @@ public class DebugPointLightRendererOverlay : BaseComponent
     {
         base.OnLoad(gameObject);
         RenderLayer = RenderLayer.Transparent;
-        _pointLightTexture = Asseteer.GetTexture(TextureAsset.dev_pointlight);
+        _pointLightTexture = Asseteer.GetTexture(EngineTextures.Icon.pointlight);
         _outlineRenderer = new BoundingBoxOutlineRenderer();
     }
 

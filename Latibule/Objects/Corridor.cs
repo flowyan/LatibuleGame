@@ -2,7 +2,7 @@
 using Engine.Core.ECS;
 using Engine.Data;
 using Engine.Rendering;
-using Latibule.Core.Data;
+using Latibule.Data.Texture;
 using OpenTK.Mathematics;
 
 namespace Latibule.Objects;
@@ -13,7 +13,7 @@ public class Corridor : GameObject
     {
         var uvScale = new Vector2(1, 1);
 
-        var component = new TextureComponent(Asseteer.GetTexture(TextureAsset.material_stone), uvScale);
+        var component = new TextureComponent(Asseteer.GetTexture(Textures.Material.stone), uvScale);
 
         AddChildren([
             PlaneMaker(CorridorFace.Floor).WithComponent(component),

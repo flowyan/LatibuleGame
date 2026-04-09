@@ -2,6 +2,7 @@
 using Engine.Core;
 using Engine.Core.Types;
 using Engine.Data;
+using Engine.Data.Shaders;
 using Engine.Physics;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
@@ -10,7 +11,7 @@ namespace Engine.Rendering.Renderer;
 
 public class BoundingBoxOutlineRenderer : IDisposable
 {
-    private Shader _lineShader = null!;
+    private Shader _lineShader;
 
     private const int VertexCount = 24;
     private const int FloatsPerVertex = 6; // pos.xyz + color.rgb
@@ -22,7 +23,7 @@ public class BoundingBoxOutlineRenderer : IDisposable
 
     public BoundingBoxOutlineRenderer()
     {
-        _lineShader = Asseteer.GetShader(InternalShaderAsset.debugui_debugLines);
+        _lineShader = Asseteer.GetShader(EngineShaders.DebugUi);
 
         _vao = GL.GenVertexArray();
         _vbo = GL.GenBuffer();

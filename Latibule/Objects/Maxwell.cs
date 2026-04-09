@@ -1,7 +1,10 @@
 ﻿using Engine.Components;
 using Engine.Core.ECS;
 using Engine.Data;
-using Latibule.Core.Data;
+using Engine.Data.Shaders;
+using Latibule.Data;
+using Latibule.Data.Model;
+using Latibule.Data.Texture;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 
@@ -20,9 +23,9 @@ public class Maxwell(bool spin = false) : GameObject
         _collision = new BoundingBoxComponent(scale: new Vector3(0.7f, 0.5f, 0.5f));
 
         WithComponents([
-            new ShaderComponent(Asseteer.GetShader(InternalShaderAsset.mesh_shader)),
-            new TextureComponent(Asseteer.GetTextures([TextureAsset.maxwell_maxwell, TextureAsset.maxwell_whiskers])),
-            new ModelRendererComponent(Asseteer.GetModel(ModelAsset.maxwell)),
+            new ShaderComponent(Asseteer.GetShader(EngineShaders.DefaultShader)),
+            new TextureComponent(Asseteer.GetTextures([Textures.Models.Maxwell.maxwell, Textures.Models.Maxwell.whiskers])),
+            new ModelRendererComponent(Asseteer.GetModel(Models.Misc.maxwell)),
             _collision
         ]);
 

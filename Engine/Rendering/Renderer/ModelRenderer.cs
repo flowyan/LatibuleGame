@@ -2,6 +2,7 @@
 using Assimp;
 using Engine.Core.ECS;
 using Engine.Data;
+using Engine.Data.Textures;
 using Engine.Rendering.Helpers;
 using Engine.Utilities;
 using OpenTK.Graphics.OpenGL4;
@@ -39,7 +40,7 @@ public class ModelRenderer : IRenderable, IDisposable
         _scene = model;
         _transform = transform;
 
-        _fallback = Asseteer.GetTexture(InternalTextureAsset.missing);
+        _fallback = Asseteer.GetTexture(EngineTextures.Dev.missing);
         _texturesByMaterial = texturesByMaterial;
         _forceAllTexture = forceAllTexture;
 

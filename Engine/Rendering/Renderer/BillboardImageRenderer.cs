@@ -1,6 +1,8 @@
 ﻿using Engine.Core.ECS;
 using Engine.Core.Types;
 using Engine.Data;
+using Engine.Data.Shaders;
+using Engine.Data.Textures;
 using Engine.Rendering.Helpers;
 using Engine.Rendering.Shapes;
 using OpenTK.Graphics.OpenGL4;
@@ -10,7 +12,7 @@ namespace Engine.Rendering.Renderer;
 
 public class BillboardImageRenderer : IRenderable, IDisposable
 {
-    private Shader _shader = null!;
+    private Shader _shader;
     private Texture? _texture;
     private Transform _transform;
     private BillboardEnum _billboard;
@@ -24,9 +26,9 @@ public class BillboardImageRenderer : IRenderable, IDisposable
     {
         var shape = new PlaneWallShape();
 
-        _shader = Asseteer.GetShader(InternalShaderAsset.mesh_shader);
+        _shader = Asseteer.GetShader(EngineShaders.Mesh);
         _transform = transform;
-        _texture = texture ?? Asseteer.GetTexture(InternalTextureAsset.missing);
+        _texture = texture ?? Asseteer.GetTexture(EngineTextures.Dev.missing);
         _billboard = billboard;
         var vertices = new VertexPositionTextureNormal[shape.Vertices.Length];
 
@@ -37,7 +39,7 @@ public class BillboardImageRenderer : IRenderable, IDisposable
                 shape.Vertices[i].Y,
                 shape.Vertices[i].Z,
                 shape.Texcoords[i].X * 1,
-                shape.Texcoords[i].Y *1,
+                shape.Texcoords[i].Y * 1,
                 shape.Normals[i].X,
                 shape.Normals[i].Y,
                 shape.Normals[i].Z

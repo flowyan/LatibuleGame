@@ -51,7 +51,7 @@ public class IsoSphere : Shape
 
                 // Map spherical coordinates to UV texture coordinates
                 Texcoords[vertexIndex].X = (float)lon / longitudeSegments;
-                Texcoords[vertexIndex].Y = 1.0f - (float)lat / latitudeSegments;  // Invert V to match texture flip
+                Texcoords[vertexIndex].Y = 1.0f - (float)lat / latitudeSegments; // Invert V to match texture flip
 
                 vertexIndex++;
             }
