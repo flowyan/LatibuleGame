@@ -11,6 +11,7 @@ public static class RenderQueue
 
         // DebugOutline
         LatibuleEngine.Map?.OnRenderFrame(args, RenderLayer.DebugOutline);
+        LatibuleEngine.Physics.OnRenderFrame(args);
 
         // WorldText
         LatibuleEngine.Map?.OnRenderFrame(args, RenderLayer.WorldText);
