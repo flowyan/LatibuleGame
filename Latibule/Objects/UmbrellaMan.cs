@@ -37,7 +37,8 @@ public class UmbrellaMan : GameObject, IPrefab
             MotionType.Dynamic,
             JoltPhysics.Layers.Moving
         );
-        PhysicsBodyID = LatibuleEngine.Physics.BodyInterface.CreateAndAddBody(creationSettings, Activation.DontActivate);
+        // activate means that it doesn't need to be interacted with to start simulating, it will start simulating immediately
+        PhysicsBodyID = LatibuleEngine.Physics.BodyInterface.CreateAndAddBody(creationSettings, Activation.Activate);
     }
 
     public override void OnUpdateFrame(FrameEventArgs args)
