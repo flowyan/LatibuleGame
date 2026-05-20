@@ -79,6 +79,8 @@ namespace Engine.Core.ImGuiNet
             {
                 var io = ImGui.GetIO();
                 BackendData* bd = GetBackendData();
+                if (bd == null)
+                    return;
 
                 float x = e.X;
                 float y = e.Y;
@@ -98,6 +100,8 @@ namespace Engine.Core.ImGuiNet
             {
                 var io = ImGui.GetIO();
                 BackendData* bd = GetBackendData();
+                if (bd == null)
+                    return;
 
                 io.AddMousePosEvent(bd->LastValidMousePos.X, bd->LastValidMousePos.Y);
             }
@@ -106,6 +110,8 @@ namespace Engine.Core.ImGuiNet
             {
                 var io = ImGui.GetIO();
                 BackendData* bd = GetBackendData();
+                if (bd == null)
+                    return;
 
                 bd->LastValidMousePos = new(io.MousePos.X, io.MousePos.Y);
                 io.AddMousePosEvent(-float.MaxValue, -float.MaxValue);
@@ -206,6 +212,8 @@ namespace Engine.Core.ImGuiNet
         {
             var io = ImGui.GetIO();
             BackendData* bd = GetBackendData();
+            if (bd == null)
+                return;
 
             bd->WantUpdateMonitors = true;
         }
@@ -294,15 +302,18 @@ namespace Engine.Core.ImGuiNet
             io.NativePtr->BackendPlatformName = null;
             io.BackendPlatformUserData = 0;
             io.BackendFlags &= ~(ImGuiBackendFlags.HasMouseCursors | ImGuiBackendFlags.HasSetMousePos | ImGuiBackendFlags.HasGamepad);
-            if (WindowMap.TryGetValue(bd->WindowPtr, out NativeWindow window))
+            if (bd != null)
             {
-                RestoreCallbacks(window);
+                if (WindowMap.TryGetValue(bd->WindowPtr, out NativeWindow window))
+                {
+                    RestoreCallbacks(window);
+                }
+                WindowMap.Remove(bd->WindowPtr);
+
+                Monitors.OnMonitorConnected -= Monitors_OnMonitorConnected;
+
+                NativeMemory.Free(bd);
             }
-            WindowMap.Remove(bd->WindowPtr);
-
-            Monitors.OnMonitorConnected -= Monitors_OnMonitorConnected;
-
-            NativeMemory.Free(bd);
         }
 
         static void UpdateMouseData()
@@ -349,6 +360,8 @@ namespace Engine.Core.ImGuiNet
             var io = ImGui.GetIO();
             var platformIO = ImGui.GetPlatformIO();
             BackendData* bd = GetBackendData();
+            if (bd == null)
+                return;
 
             if ((io.ConfigFlags & ImGuiConfigFlags.NoMouseCursorChange) != 0 || WindowMap[bd->WindowPtr].CursorState == CursorState.Grabbed)
                 return;
@@ -406,6 +419,8 @@ namespace Engine.Core.ImGuiNet
             var io = ImGui.GetIO();
             var platformIO = ImGui.GetPlatformIO();
             BackendData* bd = GetBackendData();
+            if (bd == null)
+                return;
 
             bd->WantUpdateMonitors = false;
 
@@ -438,6 +453,8 @@ namespace Engine.Core.ImGuiNet
         {
             var io = ImGui.GetIO();
             BackendData* bd = GetBackendData();
+            if (bd == null)
+                return;
 
             NativeWindow window = WindowMap[bd->WindowPtr];
             Vector2 clientSize = window.ClientSize;
@@ -489,6 +506,8 @@ namespace Engine.Core.ImGuiNet
         {
             var platformIO = ImGui.GetPlatformIO();
             BackendData* bd = GetBackendData();
+            if (bd == null)
+                return;
 
             //var a0 = (ImGuiNET.Platform_CreateWindow)Platform_CreateWindow;
             //var a1 = (ImGuiNET.Platform_DestroyWindow)Platform_DestroyWindow;
@@ -547,6 +566,9 @@ namespace Engine.Core.ImGuiNet
         static void Platform_CreateWindow(ImGuiViewportPtr viewport)
         {
             BackendData* bd = GetBackendData();
+            if (bd == null)
+                return;
+            
             NativeWindow mainWindow = WindowMap[bd->WindowPtr];
 
             ViewportData* vd = (ViewportData*)NativeMemory.AllocZeroed((uint)sizeof(ViewportData));

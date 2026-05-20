@@ -90,6 +90,8 @@ namespace Engine.Core.ImGuiNet
         public static void NewFrame()
         {
             RendererData* bd = GetBackendData();
+            if (bd == null)
+                return;
 
             if (bd->ShaderHandle == 0)
             {
@@ -104,6 +106,8 @@ namespace Engine.Core.ImGuiNet
         public static void SetupRenderState(ImDrawDataPtr drawData, int fbWidth, int fbHeight, int vao)
         {
             RendererData* bd = GetBackendData();
+            if (bd == null)
+                return;
 
             GL.Enable(EnableCap.Blend);
             GL.BlendEquation(BlendEquationMode.FuncAdd);
@@ -269,6 +273,8 @@ namespace Engine.Core.ImGuiNet
         {
             var io = ImGui.GetIO();
             RendererData* bd = GetBackendData();
+            if (bd == null)
+                return;
 
             ImGuiNative.ImFontAtlas_AddFontDefault(io.Fonts.NativePtr, null);
             //io.Fonts.AddFontDefault();
@@ -293,6 +299,8 @@ namespace Engine.Core.ImGuiNet
         {
             var io = ImGui.GetIO();
             RendererData* bd = GetBackendData();
+            if (bd == null)
+                return;
 
             if (bd->FontTexture != 0)
             {
@@ -337,6 +345,8 @@ namespace Engine.Core.ImGuiNet
         static void CreateDeviceObjects()
         {
             RendererData* bd = GetBackendData();
+            if (bd == null)
+                return;
 
             int last_texture = GL.GetInteger(GetPName.TextureBinding2D);
             int last_array_buffer = GL.GetInteger(GetPName.ArrayBufferBinding);
@@ -528,6 +538,8 @@ namespace Engine.Core.ImGuiNet
         static void DestroyDeviceObjects()
         {
             RendererData* bd = GetBackendData();
+            if (bd == null)
+                return;
 
             if (bd->VboHandle != 0)
             {
