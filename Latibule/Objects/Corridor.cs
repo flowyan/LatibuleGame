@@ -1,13 +1,13 @@
 ﻿using Engine.Components;
 using Engine.Core.ECS;
+using Engine.Core.Types;
 using Engine.Data;
-using Engine.Rendering;
 using Latibule.Data.Texture;
 using OpenTK.Mathematics;
 
 namespace Latibule.Objects;
 
-public class Corridor : GameObject
+public class Corridor : GameObject, IPrefab
 {
     public override void OnLoad()
     {
