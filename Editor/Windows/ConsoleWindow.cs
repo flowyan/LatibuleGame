@@ -10,13 +10,10 @@ namespace Editor.Windows;
 public sealed class ConsoleWindow : IEditorWindow, IDisposable
 {
     public string Title => "Console";
-    public EditorWindowSlot Slot => EditorWindowSlot.BottomFullWidth;
+    public EditorWindowSlot Slot => EditorWindowSlot.BottomRight;
 
     public void Render(FrameEventArgs e)
     {
-        ImGui.Text("Editor Console");
-        ImGui.Separator();
-
         ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0f, 0f, 0f, 1f));
         ImGui.BeginChild("##editor-console-messages", new System.Numerics.Vector2(0, -ImGui.GetFrameHeightWithSpacing() - 4f));
 
@@ -37,6 +34,10 @@ public sealed class ConsoleWindow : IEditorWindow, IDisposable
         if (ImGui.InputTextWithHint("##editor-console-input", "Enter command (help, clear, echo)", ref DevConsole.CurrentCommand, 256, ImGuiInputTextFlags.EnterReturnsTrue))
             DevConsole.ExecuteCommand(DevConsole.CurrentCommand);
         ImGui.PopStyleColor();
+    }
+
+    public void Update(FrameEventArgs e)
+    {
     }
 
     public void Dispose()
