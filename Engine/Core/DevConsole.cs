@@ -12,6 +12,7 @@ public class DevConsole
     public static List<ICommand?>? ConsoleCommands = [];
 
     public static string CurrentCommand = "";
+    public static bool IsOpen { get; set; }
 
     public static void Log(ConsoleMessage message) => Messages.Add(message);
 
