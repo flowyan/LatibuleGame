@@ -5,6 +5,7 @@ public static partial class Models
     internal enum Misc
     {
         maxwell,
+        umbrellaman,
         gun,
     }
 

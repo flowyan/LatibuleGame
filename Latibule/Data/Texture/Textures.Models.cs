@@ -9,5 +9,11 @@ public static partial class Textures
             maxwell,
             whiskers,
         }
+
+        internal enum UmbrellaMan
+        {
+            body,
+            eyes,
+        }
     }
 }
