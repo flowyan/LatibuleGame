@@ -8,11 +8,11 @@ public class Camera
 // Constants
 public static float Fov = EngineDefaults.FIELD_OF_VIEW_DEGREES; // Field of view in degrees
     private const float NearPlaneDistance = 0.001f; // Near plane distance for projection matrix
-    private const float FarPlaneDistance = 250f; // Far plane distance for projection matrix
+    private const float FarPlaneDistance = 500f; // Far plane distance for projection matrix
 
     // Eye height offset for positioning the camera at eye level instead of feet
-    public const float EyeHeightOffset = 1.6f;
-    public const float EyeHeightOffsetSneak = 1.5f; // Height when sneaking
+    public const float EyeHeightOffset = 0.7f;
+    public const float EyeHeightOffsetSneak = 0.6f; // Height when sneaking
     public Matrix4 View { get; set; }
     public Matrix4 Projection { get; private set; }
     public Vector3 Direction { get; set; }
