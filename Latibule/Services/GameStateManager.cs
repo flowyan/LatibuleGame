@@ -3,7 +3,6 @@ using Engine.Core;
 using Engine.Core.Types;
 using Latibule.Commands;
 using Latibule.Core;
-using Latibule.Core.Types;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -55,6 +54,7 @@ public static class GameStateManager
 
     public static void Update(GameWindow gameWindow)
     {
+        DevConsole.IsOpen = GameStates.CurrentGui is DevConsoleWindow;
     }
 
     public static void SetUiOnScreen(IGuiScreen? gui = null, bool imgui = false)
