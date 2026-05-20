@@ -11,7 +11,6 @@ using Latibule.Core.Types;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using BoundingBox = Engine.Physics.BoundingBox;
 
 namespace Latibule.Entities;
 
@@ -48,10 +47,10 @@ public class Player : GameObject
     private bool _isMovementPressed;
 
     // Gravity and jump properties
-    private float _gravity = 50f;
+    private float _gravity = 24f;
     public Vector3 Velocity = Vector3.Zero;
     internal float MaxVelocity = 50f;
-    private float _jumpForce = 10f;
+    private float _jumpForce = 8f;
 
     private float _jumpCooldown;
     private float _jumpCooldownTime = 0.4f;
@@ -73,7 +72,10 @@ public class Player : GameObject
 
         var characterSettings = new CharacterSettings
         {
-            Shape = new BoxShape(new Vector3(0.75f, 2f, 0.75f).ToNumerics()),
+            Shape = new BoxShape(new BoxShapeSettings(
+                new Vector3(Width / 2, Height / 2, Depth / 2).ToNumerics(),
+                0.01f // the "roundness" of the box shape
+            )),
             Layer = JoltPhysics.Layers.Moving,
             EnhancedInternalEdgeRemoval = true,
             Mass = 70f,
@@ -81,10 +83,9 @@ public class Player : GameObject
 
         var position = RawPosition.ToNumerics();
         var transformRotation = System.Numerics.Quaternion.Identity;
-        Body = new Character(characterSettings, in position, in transformRotation, 0, LatibuleGame.Physics.PhysicsSystem);
+        Body = new Character(characterSettings, in position, in transformRotation, 0, LatibuleEngine.Physics.PhysicsSystem);
         Body.AddToPhysicsSystem();
-        LatibuleGame.Physics._bodies.Add(Body.BodyID);
-        LatibuleGame.Physics._ignoreDrawBodies.Add(Body.BodyID);
+        LatibuleEngine.Physics.RegisterCharacter(Body);
     }
 
     public override void OnLoad()
@@ -99,14 +100,20 @@ public class Player : GameObject
         StartingCoords = Transform.Position;
 
         // Initialize the player's bounding box
-        UpdateBoundingBox();
+        SyncCharacterToTransform();
 
         // Bind inputs
         Input.BindKeyPressed(Keys.R, () =>
         {
             Transform.Position = StartingCoords;
             Velocity = Vector3.Zero;
-            UpdateBoundingBox();
+
+            Body.SetPositionAndRotation(
+                StartingCoords.ToNumerics(),
+                System.Numerics.Quaternion.Identity
+            );
+
+            Body.SetLinearVelocity(System.Numerics.Vector3.Zero);
         });
         Input.BindKeyPressed(Keys.V, ToggleNoclip);
         Input.BindKeyPressed(Keys.P, () => Punch(LatibuleEngine.Camera.Direction, 15f));
@@ -129,28 +136,12 @@ public class Player : GameObject
         Velocity = Vector3.Zero;
     }
 
-    public void UpdateBoundingBox()
+    private void SyncCharacterToTransform()
     {
-        // Calculate the minimum corner for BoundingBox (not the center)
-        // Center the bounding box horizontally around the player's position
-        // var min = new Vector3(
-        //     Transform.Position.X - (Width / 2f),
-        //     Transform.Position.Y, // Feet at bottom of bounding box
-        //     Transform.Position.Z - (Depth / 2f)
-        // );
-        //
-        // var height = IsSneaking ? HeightSneak : Height; // Adjust height for sneaking
-        //
-        // var max = new Vector3(
-        //     Transform.Position.X + (Width / 2f),
-        //     Transform.Position.Y + height, // Top of bounding box
-        //     Transform.Position.Z + (Depth / 2f)
-        // );
-        //
-        // Body = new BoundingBox(min, max);
-
-        Body.SetPositionAndRotation(Transform.Position.ToNumerics(), System.Numerics.Quaternion.Identity);
-        // RawPosition = Body.GetPosition().ToOpenTK();
+        Body.SetPositionAndRotation(
+            Transform.Position.ToNumerics(),
+            System.Numerics.Quaternion.Identity
+        );
 
         Body.SetLinearVelocity(Velocity.ToNumerics());
     }
@@ -164,12 +155,7 @@ public class Player : GameObject
 
     public override void OnUpdateFrame(FrameEventArgs args)
     {
-        if (GameStates.CurrentGui is DevConsole) return;
-
-        // if (ks.IsKeyDown(Keys.E) && !Engine.PreviousKState.IsKeyDown(Keys.E)) Engine.SetUiOnScreen(new InventoryGui());
-
-        // If a GUI is currently open, skip player update
-        // if (Engine.CurrentGui is not null) return;
+        if (GameStates.CurrentGui is DevConsoleWindow) return;
 
         var deltaTime = (float)args.Time;
 
@@ -179,15 +165,13 @@ public class Player : GameObject
         if (ms.WasButtonDown(MouseButton.Left) && ms.IsButtonReleased(MouseButton.Left)) Controls.ResetCooldown();
         if (ms.IsButtonDown(MouseButton.Right) && Controls.Cooldown(200)) RightClickAction();
         if (ms.WasButtonDown(MouseButton.Right) && ms.IsButtonReleased(MouseButton.Right)) Controls.ResetCooldown();
-        if (Input.IsKeyDown(Keys.LeftShift) || Input.IsKeyDown(Keys.LeftControl)) IsSneaking = true;
 
-        else IsSneaking = false;
+        IsSneaking = Input.IsKeyDown(Keys.LeftShift) || Input.IsKeyDown(Keys.LeftControl);
 
         if (IsNoclip)
         {
-            // Allow flying in all directions, ignore gravity and collisions
             Vector3 flyMove = Vector3.Zero;
-            var flySpeed = 12f; // Flying speed
+            const float flySpeed = 12f;
             var forward = Vector3.Normalize(new Vector3(LatibuleEngine.Camera.Direction.X, 0, LatibuleEngine.Camera.Direction.Z));
             var right = Vector3.Normalize(Vector3.Cross(forward, Vector3Direction.Up));
             if (Input.IsKeyDown(Keys.W)) flyMove += forward;
@@ -198,42 +182,45 @@ public class Player : GameObject
             if (IsSneaking) flyMove += Vector3Direction.Down;
             if (flyMove != Vector3.Zero) flyMove = Vector3.Normalize(flyMove);
             RawPosition += flyMove * flySpeed * deltaTime;
-            UpdateBoundingBox();
+
+            Body.SetPositionAndRotation(
+                RawPosition.ToNumerics(),
+                System.Numerics.Quaternion.Identity
+            );
+
+            Body.SetLinearVelocity(System.Numerics.Vector3.Zero);
+            Velocity = Vector3.Zero;
+
             UpdateCamera();
             return;
         }
 
-        // Apply movement input to horizontal velocity
+        IsGrounded = Body.GroundState == GroundState.OnGround;
+
         ApplyMovementInput(deltaTime);
-
-        // Apply gravity to vertical velocity
-        // ApplyGravity(deltaTime);
-
-        // Handle jumping input (only sets velocity, doesn't move yet)
+        ApplyGravity(deltaTime);
         HandleJumpInput(deltaTime);
-
-        // Apply friction/drag to velocity
         ApplyFriction(deltaTime);
-
-        // Clamp horizontal velocity to maximum speed
         ClampVelocity();
 
-        // Calculate the total displacement from velocity
-        var displacement = Velocity * deltaTime;
+        Body.SetLinearVelocity(Velocity.ToNumerics());
 
-        // Predict and resolve collisions, updating position and physics state
-        if (CollisionEnabled) HandleCollisions(displacement, deltaTime);
-        else RawPosition += displacement;
-
-        IsGrounded = Body.GroundState == GroundState.OnGround;
+        RawPosition = Body.GetPosition().ToOpenTK();
 
         UpdateCamera();
 
-        // Update the bounding box after position changes
-        UpdateBoundingBox();
-
         if (Transform.Position.Y < -100)
+        {
             Transform.Position = new Vector3(Transform.Position.X, 100, Transform.Position.Z);
+
+            Body.SetPositionAndRotation(
+                Transform.Position.ToNumerics(),
+                System.Numerics.Quaternion.Identity
+            );
+
+            Body.SetLinearVelocity(System.Numerics.Vector3.Zero);
+            Velocity = Vector3.Zero;
+        }
     }
 
     private void ApplyMovementInput(float deltaTime)
@@ -378,32 +365,6 @@ public class Player : GameObject
         var normalizedDirection = Vector3.Normalize(direction);
         // Apply the punch force to the player's velocity
         Velocity += normalizedDirection * strength;
-    }
-
-    private void HandleCollisions(Vector3 intendedDisplacement, float deltaTime)
-    {
-        // Reset grounded state - will be set to true if we detect a ground collision
-        IsGrounded = false;
-
-        // First, try to move horizontally (X and Z)
-        var horizontalMove = new Vector3(intendedDisplacement.X, 0, intendedDisplacement.Z);
-        if (horizontalMove != Vector3.Zero)
-        {
-            RawPosition = RawPosition with { X = RawPosition.X + horizontalMove.X };
-            RawPosition = RawPosition with { Z = RawPosition.Z + horizontalMove.Z };
-
-            // Update bounding box and check for collisions
-            UpdateBoundingBox();
-            // Physics.ResolveCollisions();
-        }
-
-        // // Then, try to move vertically (Y)
-        RawPosition = RawPosition with { Y = RawPosition.Y + intendedDisplacement.Y };
-        UpdateBoundingBox();
-        // Physics.ResolveCollisions();
-        //
-        // // Check for grounded state by casting a ray slightly below the player
-        // CheckGrounded();
     }
 
     // private void CheckGrounded()
