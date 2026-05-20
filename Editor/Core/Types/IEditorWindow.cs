@@ -5,8 +5,9 @@ namespace Editor.Core.Types;
 
 public interface IEditorWindow
 {
-    string Title { get; }
+    string? Title { get; }
     EditorWindowSlot Slot { get; }
     void Render(FrameEventArgs e);
+    void Update(FrameEventArgs e);
 }
 
