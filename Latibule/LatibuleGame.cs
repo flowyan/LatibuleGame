@@ -17,7 +17,6 @@ namespace Latibule;
 public class LatibuleGame : EngineWindow
 {
     public static Player Player { get; internal set; } = null!;
-    public static JoltPhysics Physics { get; private set; } = new();
 
     public LatibuleGame(NativeWindowSettings nativeWindowSettings) : base(
         new GameWindowSettings
@@ -30,7 +29,7 @@ public class LatibuleGame : EngineWindow
     {
         LogInfo($"Initializing {Metadata.GAME_NAME} version: {Metadata.GAME_VERSION}");
         GameStateManager.Initialize(this);
-        CenterWindow();
+        // CenterWindow();
     }
 
     protected override void OnLoad()
@@ -38,7 +37,6 @@ public class LatibuleGame : EngineWindow
         base.OnLoad();
 
         // Setup physics after assets are loaded (shaders needed for debug renderer)
-        Physics.SetupJoltPhysics();
 
         // Load the essential assets
         CursorState = CursorState.Grabbed;
@@ -58,8 +56,6 @@ public class LatibuleGame : EngineWindow
         GameStateManager.Update(this);
         LatibuleEngine.Map.OnUpdateFrame(args);
 
-        Physics.OnUpdateFrame(args);
-
         // Core.SteamAudio.SetListenerPosition(Player.Transform.Position, Player.Camera.Direction, Vector3Direction.Up);
     }
 
@@ -67,7 +63,6 @@ public class LatibuleGame : EngineWindow
     {
         base.OnRenderFrameAfterQueue(args);
         RenderGui(args);
-        Physics.OnRenderFrame(args);
     }
 
     private static void RenderGui(FrameEventArgs args)
