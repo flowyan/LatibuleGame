@@ -8,6 +8,14 @@ namespace Editor.Core;
 
 public sealed class EditorWindowSystem(List<IEditorWindow> windows) : IDisposable
 {
+    public void Update(FrameEventArgs e)
+    {
+        foreach (var window in windows)
+        {
+            window.Update(e);
+        }
+    }
+
     public void Render(FrameEventArgs e)
     {
         var rects = CalculateGridRects();
@@ -19,12 +27,14 @@ public sealed class EditorWindowSystem(List<IEditorWindow> windows) : IDisposabl
             var (position, size) = rects[window.Slot];
             ImGui.SetNextWindowPos(position, ImGuiCond.Always);
             ImGui.SetNextWindowSize(size, ImGuiCond.Always);
-            ImGui.Begin(window.Title,
+            ImGui.Begin(window.Title ?? "noname",
                 ImGuiWindowFlags.NoMove |
                 ImGuiWindowFlags.NoResize |
                 ImGuiWindowFlags.NoCollapse |
                 ImGuiWindowFlags.NoSavedSettings |
-                ImGuiWindowFlags.NoBringToFrontOnFocus);
+                ImGuiWindowFlags.NoBringToFrontOnFocus |
+                (window.Title == null ? ImGuiWindowFlags.NoTitleBar : ImGuiWindowFlags.None)
+            );
 
             window.Render(e);
             ImGui.End();
@@ -46,29 +56,8 @@ public sealed class EditorWindowSystem(List<IEditorWindow> windows) : IDisposabl
 
         if (ImGui.BeginMenu("Edit"))
         {
-            if (ImGui.MenuItem("Undo", "Ctrl+Z"))
+            if (ImGui.MenuItem("Todo"))
             {
-                // Undo
-            }
-
-            if (ImGui.MenuItem("Redo", "Ctrl+Y"))
-            {
-                // Redo
-            }
-
-            ImGui.EndMenu();
-        }
-
-        if (ImGui.BeginMenu("View"))
-        {
-            if (ImGui.MenuItem("Assets"))
-            {
-                // Toggle assets panel
-            }
-
-            if (ImGui.MenuItem("Properties"))
-            {
-                // Toggle properties panel
             }
 
             ImGui.EndMenu();
@@ -95,7 +84,8 @@ public sealed class EditorWindowSystem(List<IEditorWindow> windows) : IDisposabl
             [EditorWindowSlot.TopLeft] = (workPos, new Vector2(leftWidth, topHeight)),
             [EditorWindowSlot.TopCenter] = (new Vector2(workPos.X + leftWidth + EditorOptions.GridGap, workPos.Y), new Vector2(centerWidth, topHeight)),
             [EditorWindowSlot.TopRight] = (new Vector2(workPos.X + leftWidth + centerWidth + (EditorOptions.GridGap * 2f), workPos.Y), new Vector2(rightWidth, topHeight)),
-            [EditorWindowSlot.BottomFullWidth] = (new Vector2(workPos.X, workPos.Y + topHeight + EditorOptions.GridGap), new Vector2(workSize.X, bottomHeight)),
+            [EditorWindowSlot.BottomRight] = (new Vector2(workPos.X + leftWidth + centerWidth + (EditorOptions.GridGap * 2f), workPos.Y + topHeight + EditorOptions.GridGap), new Vector2(rightWidth, bottomHeight)),
+            [EditorWindowSlot.BottomFullWidth] = (workPos + new Vector2(0, topHeight + EditorOptions.GridGap), new Vector2(workSize.X, bottomHeight))
         };
     }
 }
