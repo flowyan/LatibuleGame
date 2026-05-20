@@ -1,9 +1,10 @@
 ﻿using Editor.Core.Types;
 using Engine.Core;
 using ImGuiNET;
-using System.Windows.Forms;
 using Engine;
 using Engine.Rendering;
+using Engine.Serialization;
+using Latibule.Maps;
 using Metadata = Editor.Core.Metadata;
 
 namespace Editor.Windows.Menubar;
@@ -21,17 +22,28 @@ public static class FileMenubar
 
         if (ImGui.MenuItem("Open", "Ctrl+O"))
         {
+            var loadedMap = MapFileUtil.LoadMapFromFile();
+            if (loadedMap != null) LatibuleEngine.Map = loadedMap;
+            LatibuleEngine.Map.OnLoad();
             // Open map
+        }
+
+        if (ImGui.MenuItem("evil", "penis"))
+        {
+            LatibuleEngine.Map = new GameMap();
+            LatibuleEngine.Map = TestingMap.Create();
+            LatibuleEngine.Map.OnLoad();
         }
 
         if (ImGui.MenuItem("Save", "Ctrl+S"))
         {
+            MapFileUtil.SaveMapToFile();
             // Save map
         }
 
-        if (ImGui.MenuItem("Save As..."))
+        ImGui.Separator();
+        if (ImGui.MenuItem("About"))
         {
-            // Save map as
         }
 
         ImGui.Separator();
