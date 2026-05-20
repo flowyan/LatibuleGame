@@ -108,9 +108,10 @@ public class FontStashRenderer : IFontStashRenderer2, IDisposable
         _vertexBuffer.Bind();
     }
 
-    public void BeginWorld(Transform transform, BillboardEnum? billboard = null)
+    public void BeginWorld(Transform transform, BillboardEnum? billboard = null, bool depth = false)
     {
-        GL.DepthMask(false);
+        if (depth) GL.Disable(EnableCap.DepthTest);
+        GL.DepthMask(depth);
         GLUtility.CheckError();
         GL.Enable(EnableCap.Blend);
         GLUtility.CheckError();

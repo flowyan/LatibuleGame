@@ -7,7 +7,7 @@ namespace Engine.Rendering.Renderer;
 
 public class WorldTextRenderer(TextRendererOptions options)
 {
-    public void Render(Transform _transform, string? text = null)
+    public void Render(Transform _transform, string? text = null, bool depth = false)
     {
         var font = Asseteer.FontSystem.GetFont(options.fontSize);
         var size = font.MeasureString(
@@ -21,7 +21,7 @@ public class WorldTextRenderer(TextRendererOptions options)
 
         var pos = -size * 0.5f;
 
-        Asseteer.FontRenderer.BeginWorld(_transform, options.billboard);
+        Asseteer.FontRenderer.BeginWorld(_transform, options.billboard, depth);
 
         font.DrawText(
             Asseteer.FontRenderer,
