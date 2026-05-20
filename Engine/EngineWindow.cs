@@ -3,12 +3,10 @@ using System.Drawing;
 using Engine.Core;
 using Engine.Core.ImGuiNet;
 using Engine.Data;
-using Engine.Physics;
 using Engine.Rendering;
 using Engine.Rendering.Renderer;
 using Engine.Services;
 using ImGuiNET;
-using JoltPhysicsSharp;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
@@ -37,7 +35,7 @@ public class EngineWindow : GameWindow
         DevConsole.Initialize();
         LogInfo($"Initializing {Metadata.ENGINE_NAME} version: {Metadata.ENGINE_VERSION}");
         EngineStateManager.Initialize(this);
-        CenterWindow();
+        // CenterWindow();
     }
 
     protected override void OnLoad()
@@ -51,6 +49,8 @@ public class EngineWindow : GameWindow
         OnSetupImGui();
 
         Asseteer.LoadAssets();
+
+        LatibuleEngine.Physics.SetupJoltPhysics();
     }
 
     protected override void OnUpdateFrame(FrameEventArgs args)
