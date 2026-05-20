@@ -7,9 +7,6 @@ using Engine.Data.Shaders;
 using Engine.Rendering;
 using Engine.Rendering.Text;
 using FontStashSharp;
-using NAudio.Vorbis;
-using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
 using OpenTK.Mathematics;
 using static Engine.Core.Logger;
 using Vector2 = System.Numerics.Vector2;
@@ -25,7 +22,7 @@ public class Asseteer(AsseteerPaths paths)
 
     // keyed by texture path
     private static readonly Dictionary<string, Texture> LoadedTextures = [];
-    private static readonly Dictionary<string, Func<WaveStream>> LoadedSoundsList = [];
+    // private static readonly Dictionary<string, Func<WaveStream>> LoadedSoundsList = [];
     private static readonly Dictionary<string, Shader> LoadedShaders = [];
     private static readonly Dictionary<string, Scene> LoadedModels = [];
 
@@ -160,7 +157,7 @@ public class Asseteer(AsseteerPaths paths)
 
             try
             {
-                LoadedSoundsList[soundName] = () => CreateSoundStream(file.FullName, extension);
+                // LoadedSoundsList[soundName] = () => CreateSoundStream(file.FullName, extension);
                 LogInfo($"Loaded sound: {soundName} ({file.Name})");
             }
             catch (Exception e)
@@ -170,16 +167,16 @@ public class Asseteer(AsseteerPaths paths)
         }
     }
 
-    private static WaveStream CreateSoundStream(string filePath, string extension)
-    {
-        return extension switch
-        {
-            ".ogg" => new VorbisWaveReader(filePath),
-            ".wav" => new AudioFileReader(filePath),
-            ".mp3" => new AudioFileReader(filePath),
-            _ => throw new NotSupportedException($"Unsupported sound format: {extension}")
-        };
-    }
+    // private static WaveStream CreateSoundStream(string filePath, string extension)
+    // {
+    //     return extension switch
+    //     {
+    //         ".ogg" => new VorbisWaveReader(filePath),
+    //         ".wav" => new AudioFileReader(filePath),
+    //         ".mp3" => new AudioFileReader(filePath),
+    //         _ => throw new NotSupportedException($"Unsupported sound format: {extension}")
+    //     };
+    // }
 
     private void LoadShaders()
     {
@@ -293,67 +290,67 @@ public class Asseteer(AsseteerPaths paths)
         var file = soundAsset.ToString();
         var soundName = $"{folder}/{file}";
 
-        if (!LoadedSoundsList.TryGetValue(soundName, out var soundFactory))
-        {
-            LogError($"Sound '{soundName}' was not found.");
-            return;
-        }
-
-        var sound = soundFactory();
-        var outputDevice = new WaveOutEvent();
-
-        outputDevice.PlaybackStopped += (_, _) =>
-        {
-            outputDevice.Dispose();
-            sound.Dispose();
-        };
-
-        outputDevice.Init(sound);
-        outputDevice.Volume = volume;
-        outputDevice.Play();
+        // if (!LoadedSoundsList.TryGetValue(soundName, out var soundFactory))
+        // {
+        //     LogError($"Sound '{soundName}' was not found.");
+        //     return;
+        // }
+        //
+        // var sound = soundFactory();
+        // var outputDevice = new WaveOutEvent();
+        //
+        // outputDevice.PlaybackStopped += (_, _) =>
+        // {
+        //     outputDevice.Dispose();
+        //     sound.Dispose();
+        // };
+        //
+        // outputDevice.Init(sound);
+        // outputDevice.Volume = volume;
+        // outputDevice.Play();
     }
 
-    public static void PlaySteamAudioSound<TEnum>(TEnum soundAsset, Vector3 soundPosition, float volume = 0.5f)
-        where TEnum : struct, Enum
-    {
-        var folder = typeof(TEnum).Name.ToLowerInvariant();
-        var file = soundAsset.ToString();
-        var soundName = $"{folder}/{file}";
-
-        if (!LoadedSoundsList.TryGetValue(soundName, out var soundFactory))
-        {
-            LogError($"Sound '{soundName}' was not found.");
-            return;
-        }
-
-        var stream = soundFactory();
-        var sp = stream.ToSampleProvider();
-
-        if (sp.WaveFormat.SampleRate != Audio.SteamAudio.SamplingRate)
-            sp = new WdlResamplingSampleProvider(sp, Audio.SteamAudio.SamplingRate);
-
-        var spatial = new SteamAudioSampleProvider(sp, soundPosition, volume);
-        IWaveProvider waveProvider = new SampleToWaveProvider24(spatial);
-
-        var device = new NAudio.CoreAudioApi.MMDeviceEnumerator()
-            .GetDefaultAudioEndpoint(
-                NAudio.CoreAudioApi.DataFlow.Render,
-                NAudio.CoreAudioApi.Role.Multimedia);
-
-        var outDevice = new WasapiOut(
-            device,
-            NAudio.CoreAudioApi.AudioClientShareMode.Shared,
-            true,
-            latency: 30);
-
-        outDevice.PlaybackStopped += (_, _) =>
-        {
-            outDevice.Dispose();
-            stream.Dispose();
-        };
-
-        outDevice.Init(waveProvider);
-        outDevice.Volume = volume;
-        outDevice.Play();
-    }
+    // public static void PlaySteamAudioSound<TEnum>(TEnum soundAsset, Vector3 soundPosition, float volume = 0.5f)
+    //     where TEnum : struct, Enum
+    // {
+    //     var folder = typeof(TEnum).Name.ToLowerInvariant();
+    //     var file = soundAsset.ToString();
+    //     var soundName = $"{folder}/{file}";
+    //
+    //     if (!LoadedSoundsList.TryGetValue(soundName, out var soundFactory))
+    //     {
+    //         LogError($"Sound '{soundName}' was not found.");
+    //         return;
+    //     }
+    //
+    //     var stream = soundFactory();
+    //     var sp = stream.ToSampleProvider();
+    //
+    //     if (sp.WaveFormat.SampleRate != Audio.SteamAudio.SamplingRate)
+    //         sp = new WdlResamplingSampleProvider(sp, Audio.SteamAudio.SamplingRate);
+    //
+    //     var spatial = new SteamAudioSampleProvider(sp, soundPosition, volume);
+    //     IWaveProvider waveProvider = new SampleToWaveProvider24(spatial);
+    //
+    //     var device = new NAudio.CoreAudioApi.MMDeviceEnumerator()
+    //         .GetDefaultAudioEndpoint(
+    //             NAudio.CoreAudioApi.DataFlow.Render,
+    //             NAudio.CoreAudioApi.Role.Multimedia);
+    //
+    //     var outDevice = new WasapiOut(
+    //         device,
+    //         NAudio.CoreAudioApi.AudioClientShareMode.Shared,
+    //         true,
+    //         latency: 30);
+    //
+    //     outDevice.PlaybackStopped += (_, _) =>
+    //     {
+    //         outDevice.Dispose();
+    //         stream.Dispose();
+    //     };
+    //
+    //     outDevice.Init(waveProvider);
+    //     outDevice.Volume = volume;
+    //     outDevice.Play();
+    // }
 }
