@@ -97,7 +97,9 @@ public class ModelRenderer : IRenderable, IDisposable
 
     internal void CollectNode(Node node, Matrix4 parent, Matrix4 rootModel, Vector3 camPos)
     {
-        var local = ToOpenTK(node.Transform);
+        //! This makes local transformations not work, but it makes models aligned correctly with physics mesh shapes :D
+        // var local = ToOpenTK(node.Transform);
+        var local = Matrix4.Identity;
         var global = parent * local;
 
         if (node.HasMeshes)
