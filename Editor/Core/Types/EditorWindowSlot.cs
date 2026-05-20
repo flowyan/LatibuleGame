@@ -5,6 +5,7 @@ public enum EditorWindowSlot
     TopLeft,
     TopCenter,
     TopRight,
+    BottomRight,
     BottomFullWidth
 }
 
