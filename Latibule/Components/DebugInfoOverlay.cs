@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Engine;
 using Engine.Core;
 using Engine.Core.ECS;
 using Engine.Core.Types;
@@ -18,7 +19,7 @@ public class DebugInfoOverlay : BaseComponent
 {
     private string _userMachine = $"{Environment.UserName}@{Environment.MachineName}";
     private string _os = Environment.OSVersion.ToString();
-    private string _gpu = GL.GetString(StringName.Renderer);
+    private string _gpu = GL.GetString(StringName.Renderer).Split("(")[0].Trim();
     private string _glslVersion = GL.GetString(StringName.ShadingLanguageVersion);
 
     private UiTextRenderer _textRenderer;
@@ -71,6 +72,7 @@ public class DebugInfoOverlay : BaseComponent
             $"X: {LatibuleGame.Player.Transform.Position.X}",
             $"Y: {LatibuleGame.Player.Transform.Position.Y}",
             $"Z: {LatibuleGame.Player.Transform.Position.Z}",
+            $"Camera: {LatibuleEngine.Camera.Position}",
             $"Velocity: {LatibuleGame.Player.Velocity}",
             $"Grounded: {LatibuleGame.Player.IsGrounded}",
         ];
@@ -87,7 +89,7 @@ public class DebugInfoOverlay : BaseComponent
             $"GC Used memory: {GC.GetTotalMemory(false) / 1024 / 1024} MB",
             $"Time: {DateTime.Now:HH:mm:ss}",
             $"Resolution: {gameWindow.ClientSize.X}x{gameWindow.ClientSize.Y}",
-            $"{_gpu}",
+            $"{_gpu[..Math.Min(_gpu.Length, 40)]}{(_gpu.Length > 40 ? "..." : "")}",
             $"{gameWindow.API.ToString()} {gameWindow.APIVersion} (GLSL {_glslVersion})",
         ];
         DrawTextArray(rightAlignedTexts, rightSidePosition, FSColor.White, true);
