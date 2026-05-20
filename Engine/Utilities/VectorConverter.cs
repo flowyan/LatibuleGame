@@ -1,4 +1,6 @@
-﻿namespace Engine.Utilities;
+﻿using OpenTK.Mathematics;
+
+namespace Engine.Utilities;
 
 public static class VectorConverter
 {
@@ -50,5 +52,22 @@ public static class VectorConverter
 
         const float RadToDeg = 180f / MathF.PI;
         return new OpenTK.Mathematics.Vector3(x * RadToDeg, y * RadToDeg, z * RadToDeg);
+    }
+
+    public static System.Numerics.Quaternion ToQuaternion(this Vector3 vector)
+    {
+        return new System.Numerics.Quaternion(
+            MathF.Sin(MathHelper.DegreesToRadians(vector.X) / 2f) * MathF.Cos(MathHelper.DegreesToRadians(vector.Y) / 2f) * MathF.Cos(MathHelper.DegreesToRadians(vector.Z) / 2f) -
+            MathF.Cos(MathHelper.DegreesToRadians(vector.X) / 2f) * MathF.Sin(MathHelper.DegreesToRadians(vector.Y) / 2f) * MathF.Sin(MathHelper.DegreesToRadians(vector.Z) / 2f),
+
+            MathF.Cos(MathHelper.DegreesToRadians(vector.X) / 2f) * MathF.Sin(MathHelper.DegreesToRadians(vector.Y) / 2f) * MathF.Cos(MathHelper.DegreesToRadians(vector.Z) / 2f) +
+            MathF.Sin(MathHelper.DegreesToRadians(vector.X) / 2f) * MathF.Cos(MathHelper.DegreesToRadians(vector.Y) / 2f) * MathF.Sin(MathHelper.DegreesToRadians(vector.Z) / 2f),
+
+            MathF.Cos(MathHelper.DegreesToRadians(vector.X) / 2f) * MathF.Cos(MathHelper.DegreesToRadians(vector.Y) / 2f) * MathF.Sin(MathHelper.DegreesToRadians(vector.Z) / 2f) -
+            MathF.Sin(MathHelper.DegreesToRadians(vector.X) / 2f) * MathF.Sin(MathHelper.DegreesToRadians(vector.Y) / 2f) * MathF.Cos(MathHelper.DegreesToRadians(vector.Z) / 2f),
+
+            MathF.Cos(MathHelper.DegreesToRadians(vector.X) / 2f) * MathF.Cos(MathHelper.DegreesToRadians(vector.Y) / 2f) * MathF.Cos(MathHelper.DegreesToRadians(vector.Z) / 2f) +
+            MathF.Sin(MathHelper.DegreesToRadians(vector.X) / 2f) * MathF.Sin(MathHelper.DegreesToRadians(vector.Y) / 2f) * MathF.Sin(MathHelper.DegreesToRadians(vector.Z) / 2f)
+        );
     }
 }
