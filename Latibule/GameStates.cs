@@ -1,6 +1,4 @@
-﻿using Latibule.Core.Types;
-using OpenTK.Windowing.Desktop;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+﻿using Engine.Core.Types;
 
 namespace Latibule;
 
