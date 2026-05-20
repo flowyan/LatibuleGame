@@ -1,14 +1,17 @@
-﻿using Engine;
+﻿using Editor.Objects;
+using Engine;
 using Engine.Components;
 using Engine.Core;
 using Engine.Core.ECS;
 using Engine.Core.Types;
 using Engine.Data;
 using Engine.Data.Shaders;
+using Engine.Physics;
 using Engine.Rendering;
 using Engine.Rendering.Shapes;
 using Engine.Utilities;
 using FontStashSharp;
+using JoltPhysicsSharp;
 using Latibule.Core.Types;
 using Latibule.Data.Texture;
 using Latibule.Objects;
@@ -97,6 +100,8 @@ public static class EditorSceneBootstrap
         world.AddObject(new Maxwell(true) { Transform = { Position = new Vector3(0, 0.5f, 8.5f) } });
         world.AddObject(new Maxwell { Transform = { Position = new Vector3(2, 0.5f, 8.5f) } });
 
+        world.AddObject(new UmbrellaMan { Transform = { Position = new Vector3(2, 0.5f, -8.5f) } });
+        
         LatibuleEngine.Map = world;
 
         var direction = Vector3Direction.Forward;
@@ -109,6 +114,26 @@ public static class EditorSceneBootstrap
         LatibuleEngine.Camera.Update();
 
         world.OnLoad();
+        
+        List<GameObject> objectTexts = [];
+        const float boxScale = 0.1f;
+        // this has to run after OnLoad, since a lot of objects have their physics bodies created in OnLoad
+        foreach (var obj in world.Objects)
+        {
+            if (obj.PhysicsBodyID != null) continue; // already has physics body, skip
+            obj.PhysicsBodyID = LatibuleEngine.Physics.BodyInterface.CreateAndAddBody(new BodyCreationSettings(
+                new BoxShape(new System.Numerics.Vector3(boxScale)),
+                obj.Transform.Position.ToNumerics(),
+                obj.Transform.Rotation.ToQuaternion(),
+                MotionType.Static,
+                JoltPhysics.Layers.NonMoving
+            ), Activation.DontActivate);
+            
+            objectTexts.Add(new EditorObjectText($"{obj}", BillboardEnum.Full, FSColor.Green) {Transform = { Position = obj.Transform.Position + new Vector3(0, 0, 0) } });
+        }
+        
+        // world.AddObjects(objectTexts);
+        
         _initialized = true;
     }
 }
