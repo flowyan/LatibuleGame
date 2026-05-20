@@ -15,7 +15,7 @@ public static class Program
     {
         ClientSize = new Vector2i(1920, 1080),
         Title = $"{Metadata.EDITOR_NAME} {Metadata.EDITOR_VERSION}",
-        Icon = WindowHelper.LoadIcon("Assets/icon.jpg"),
+        // Icon = WindowHelper.LoadIcon("Assets/icon.jpg"),
         APIVersion = new Version(4, 6),
         Flags = ContextFlags.ForwardCompatible | ContextFlags.Debug,
         Profile = ContextProfile.Core,
