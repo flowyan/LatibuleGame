@@ -1,13 +1,8 @@
 ﻿using System.Diagnostics;
-using Engine.Core.ECS;
-using Engine.Data;
-using Engine.Data.Shaders;
-using Engine.Data.Textures;
-using Engine.Rendering.Renderer;
-using Engine.Rendering.Shapes;
+using Engine.Core;
+using Engine.Core.Types;
 using Engine.Utilities;
 using JoltPhysicsSharp;
-using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using static Engine.Core.Logger;
 using Quaternion = System.Numerics.Quaternion;
@@ -40,19 +35,19 @@ public class JoltPhysics : IDisposable
         public static readonly BroadPhaseLayer Moving = 1;
     }
 
-    private const double FixedPhysicsStep = 1.0 / 60.0;
+    private const double FixedPhysicsStep = 1.0 / 120.0;
     private const double MaxPhysicsFrameTime = 0.25;
     private const int MaxPhysicsStepsPerFrame = 8;
 
     private const int CollisionStepsPerUpdate = 2;
-    private const float PushableBoxMass = 40f;
-    private const float PushableBoxFriction = 0.2f;
+    private const float PushableBoxMass = 70f;
+    private const float PushableBoxFriction = 20f;
     private const float PushableBoxLinearDamping = 0.05f;
     private const float PushableBoxAngularDamping = 0.05f;
 
     private PhysicsSystemSettings _settings;
-    public readonly List<BodyID> _bodies = [];
-    public readonly HashSet<BodyID> _ignoreDrawBodies = [];
+    public readonly List<BodyID> Bodies = [];
+    public readonly List<Character> Characters = [];
     private double _physicsAccumulator;
 
     public void SetupJoltPhysics()
@@ -96,8 +91,10 @@ public class JoltPhysics : IDisposable
         PhysicsSystem.OnBodyActivated += OnBodyActivated;
         PhysicsSystem.OnBodyDeactivated += OnBodyDeactivated;
 
-        CreateBox(Vector3.One, new Vector3(0, 5f, 0), Quaternion.Identity, MotionType.Dynamic, Layers.Moving);
-        CreateFloor(10, Layers.NonMoving);
+        PhysicsSystem.Gravity = new Vector3(0.0f, -9.81f, 0.0f);
+
+        // CreateBox(Vector3.One, new Vector3(0, 5f, 0), Quaternion.Identity, MotionType.Dynamic, Layers.Moving);
+        // CreateFloor(10, Layers.NonMoving);
 
         debugRenderer = new JoltPhysicsDebugRenderer();
     }
@@ -119,6 +116,7 @@ public class JoltPhysics : IDisposable
 
     public void OnUpdateFrame(FrameEventArgs args)
     {
+        if (DevConsole.IsOpen) return;
         // TODO: Call this during level load when level loading is implemented
         // Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
         // You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
@@ -140,6 +138,11 @@ public class JoltPhysics : IDisposable
             var error = PhysicsSystem.Update((float)FixedPhysicsStep, CollisionStepsPerUpdate, JobSystem);
             Debug.Assert(error == PhysicsUpdateError.None);
 
+            foreach (var character in Characters)
+            {
+                character.PostSimulation(0.05f);
+            }
+
             _physicsAccumulator -= FixedPhysicsStep;
             physicsSteps++;
         }
@@ -153,31 +156,66 @@ public class JoltPhysics : IDisposable
 
     public void OnRenderFrame(FrameEventArgs args)
     {
-        foreach (var bodyID in _bodies)
+        foreach (var bodyTuple in LatibuleEngine.Map.GetBodyIDs())
+        {
+            var transform = BodyInterface.GetTransformedShape(BodyLockInterface, bodyTuple.Item1);
+            DrawTransformedShapeWireframe(transform, new JoltColor(bodyTuple.Item2));
+        }
+        foreach (var bodyID in Bodies)
         {
             var transform = BodyInterface.GetTransformedShape(BodyLockInterface, bodyID);
-            var centerOfMassTransform = transform.CenterOfMassTransform;
-
-            debugRenderer.SetCameraPosition(LatibuleEngine.Camera.Position.ToNumerics());
-            transform.Shape.Draw(debugRenderer, centerOfMassTransform, Vector3.One, new JoltColor(0xFFFFFF), false, true);
-            debugRenderer.NextFrame();
-
-            if (_ignoreDrawBodies.Contains(bodyID)) continue;
-
-            var renderer = new ShapeRenderer(
-                Asseteer.GetShader(EngineShaders.EngineShader.mesh),
-                new Cube(),
-                new Transform(
-                    centerOfMassTransform.Translation.ToOpenTK(),
-                    transform.ShapeScale.ToOpenTK(),
-                    transform.ShapeRotation.ToOpenTKEulerDegrees()
-                ),
-                Asseteer.GetTexture(EngineTextures.Dev.dev_measuregeneric01),
-                Vector2.One,
-                0f
-            );
-            renderer.Render();
+            DrawTransformedShapeWireframe(transform, new JoltColor(0xFF00FF));
         }
+    }
+    
+    // if (_ignoreDrawBodies.Contains(bodyID)) continue;
+
+    // var renderer = new ShapeRenderer(
+    //     Asseteer.GetShader(EngineShaders.EngineShader.mesh),
+    //     new Cube(),
+    //     new Transform(
+    //         transform.CenterOfMassTransform.Translation.ToOpenTK(),
+    //         (transform.Shape.LocalBounds.Min + transform.Shape.LocalBounds.Max * 2f).ToOpenTK(),
+    //         transform.ShapeRotation.ToOpenTKEulerDegrees()
+    //     ),
+    //     Asseteer.GetTexture(EngineTextures.Dev.dev_measuregeneric01),
+    //     Vector2.One,
+    //     0f
+    // );
+    // renderer.Render();
+
+    private void DrawTransformedShapeWireframe(TransformedShape transformedShape, JoltColor color)
+    {
+        if (!EngineStates.EnabledDebugOverlays[DebugOverlayType.BoundingBoxes] || transformedShape.Shape == null!) return;
+        debugRenderer.SetCameraPosition(LatibuleEngine.Camera.Position.ToNumerics());
+        transformedShape.Shape.Draw(debugRenderer, transformedShape.CenterOfMassTransform, Vector3.One, color, false, true);
+        debugRenderer.NextFrame();
+    }
+
+    public void RegisterBodyId(BodyID bodyId)
+    {
+        if (Bodies.Contains(bodyId)) return;
+
+        Bodies.Add(bodyId);
+    }
+
+    public void UnregisterBody(BodyID bodyId)
+    {
+        Bodies.Remove(bodyId);
+    }
+
+    public void RegisterCharacter(Character character)
+    {
+        if (Characters.Contains(character)) return;
+
+        Characters.Add(character);
+        Bodies.Add(character.BodyID);
+    }
+
+    public void UnregisterCharacter(Character character)
+    {
+        Characters.Remove(character);
+        Bodies.Remove(character.BodyID);
     }
 
     #region Physics
@@ -201,58 +239,58 @@ public class JoltPhysics : IDisposable
         _settings.ObjectVsBroadPhaseLayerFilter = objectVsBroadPhaseLayerFilter;
     }
 
-    protected BodyID CreateFloor(float size, ObjectLayer layer)
-    {
-        BoxShape shape = new(new Vector3(size, 1.0f, size));
-        using BodyCreationSettings creationSettings = new(shape, new Vector3(0, -5.0f, 0.0f), Quaternion.Identity, MotionType.Static, layer);
-        BodyID body = BodyInterface.CreateAndAddBody(creationSettings, Activation.DontActivate);
-        _bodies.Add(body);
-        _ignoreDrawBodies.Add(body);
-        return body;
-    }
+    // protected BodyID CreateFloor(float size, ObjectLayer layer)
+    // {
+    //     BoxShape shape = new(new Vector3(size, 1.0f, size));
+    //     using BodyCreationSettings creationSettings = new(shape, new Vector3(0, -5.0f, 0.0f), Quaternion.Identity, MotionType.Static, layer);
+    //     BodyID body = BodyInterface.CreateAndAddBody(creationSettings, Activation.DontActivate);
+    //     _bodies.Add(body);
+    //     // _ignoreDrawBodies.Add(body);
+    //     return body;
+    // }
 
-    protected BodyID CreateBox(in Vector3 halfExtent,
-        in Vector3 position,
-        in Quaternion rotation,
-        MotionType motionType,
-        ObjectLayer layer,
-        Activation activation = Activation.Activate)
-    {
-        BoxShape shape = new(halfExtent);
-        using BodyCreationSettings creationSettings = new(shape, position, rotation, motionType, layer);
+    // protected BodyID CreateBox(in Vector3 halfExtent,
+    //     in Vector3 position,
+    //     in Quaternion rotation,
+    //     MotionType motionType,
+    //     ObjectLayer layer,
+    //     Activation activation = Activation.Activate)
+    // {
+    //     BoxShape shape = new(halfExtent);
+    //     using BodyCreationSettings creationSettings = new(shape, position, rotation, motionType, layer);
+    //
+    //     if (motionType == MotionType.Dynamic)
+    //     {
+    //         // Keep boxes light and low-friction so the player can push them around easily.
+    //         creationSettings.OverrideMassProperties = OverrideMassProperties.CalculateInertia;
+    //         var massProperties = creationSettings.MassPropertiesOverride;
+    //         massProperties.Mass = PushableBoxMass;
+    //         creationSettings.MassPropertiesOverride = massProperties;
+    //
+    //         creationSettings.Friction = PushableBoxFriction;
+    //         creationSettings.LinearDamping = PushableBoxLinearDamping;
+    //         creationSettings.AngularDamping = PushableBoxAngularDamping;
+    //         creationSettings.MotionQuality = MotionQuality.LinearCast;
+    //     }
+    //
+    //     BodyID body = BodyInterface.CreateAndAddBody(creationSettings, activation);
+    //     _bodies.Add(body);
+    //     return body;
+    // }
 
-        if (motionType == MotionType.Dynamic)
-        {
-            // Keep boxes light and low-friction so the player can push them around easily.
-            creationSettings.OverrideMassProperties = OverrideMassProperties.CalculateInertia;
-            var massProperties = creationSettings.MassPropertiesOverride;
-            massProperties.Mass = PushableBoxMass;
-            creationSettings.MassPropertiesOverride = massProperties;
-
-            creationSettings.Friction = PushableBoxFriction;
-            creationSettings.LinearDamping = PushableBoxLinearDamping;
-            creationSettings.AngularDamping = PushableBoxAngularDamping;
-            creationSettings.MotionQuality = MotionQuality.LinearCast;
-        }
-
-        BodyID body = BodyInterface.CreateAndAddBody(creationSettings, activation);
-        _bodies.Add(body);
-        return body;
-    }
-
-    protected BodyID CreateSphere(float radius,
-        in Vector3 position,
-        in Quaternion rotation,
-        MotionType motionType,
-        ObjectLayer layer,
-        Activation activation = Activation.Activate)
-    {
-        SphereShape shape = new(radius);
-        using BodyCreationSettings creationSettings = new(shape, position, rotation, motionType, layer);
-        BodyID body = BodyInterface.CreateAndAddBody(creationSettings, activation);
-        _bodies.Add(body);
-        return body;
-    }
+    // protected BodyID CreateSphere(float radius,
+    //     in Vector3 position,
+    //     in Quaternion rotation,
+    //     MotionType motionType,
+    //     ObjectLayer layer,
+    //     Activation activation = Activation.Activate)
+    // {
+    //     SphereShape shape = new(radius);
+    //     using BodyCreationSettings creationSettings = new(shape, position, rotation, motionType, layer);
+    //     BodyID body = BodyInterface.CreateAndAddBody(creationSettings, activation);
+    //     _bodies.Add(body);
+    //     return body;
+    // }
 
     public struct VehicleSettings
     {
@@ -399,7 +437,7 @@ public class JoltPhysics : IDisposable
 
     protected virtual ValidateResult OnContactValidate(PhysicsSystem system, in Body body1, in Body body2, RVector3 baseOffset, in CollideShapeResult collisionResult)
     {
-        LogDebug("Contact validate callback");
+        // LogDebug("Contact validate callback");
 
         // Allows you to ignore a contact before it is created (using layers to not make objects collide is cheaper!)
         return ValidateResult.AcceptAllContactsForThisBodyPair;
@@ -407,41 +445,41 @@ public class JoltPhysics : IDisposable
 
     protected virtual void OnContactAdded(PhysicsSystem system, in Body body1, in Body body2, in ContactManifold manifold, ref ContactSettings settings)
     {
-        LogDebug("A contact was added");
+        LogDebug($"A contact was added between body {body1.ID} and body {body2.ID}");
     }
 
     protected virtual void OnContactPersisted(PhysicsSystem system, in Body body1, in Body body2, in ContactManifold manifold, ref ContactSettings settings)
     {
         // Override the restitution to 0.5
         settings.CombinedRestitution = 0.5f;
-        LogDebug("A contact was persisted");
+        // LogDebug("A contact was persisted");
     }
 
     protected virtual void OnContactRemoved(PhysicsSystem system, ref SubShapeIDPair subShapePair)
     {
-        LogDebug("A contact was removed");
+        LogDebug($"A contact was removed between body {subShapePair.Body1ID} and body {subShapePair.Body2ID}");
     }
 
     protected virtual void OnBodyActivated(PhysicsSystem system, in BodyID bodyID, ulong bodyUserData)
     {
-        LogDebug("A body got activated");
+        LogDebug($"A body woke up with ID {bodyID}");
     }
 
     protected virtual void OnBodyDeactivated(PhysicsSystem system, in BodyID bodyID, ulong bodyUserData)
     {
-        LogDebug("A body went to sleep");
+        LogDebug($"A body went to sleep with ID {bodyID}");
     }
 
     #endregion
 
     public void Dispose()
     {
-        foreach (BodyID bodyID in _bodies)
+        foreach (BodyID bodyID in Bodies)
         {
             BodyInterface.RemoveAndDestroyBody(bodyID);
         }
 
-        _bodies.Clear();
+        Bodies.Clear();
 
         JobSystem.Dispose();
         PhysicsSystem.Dispose();
