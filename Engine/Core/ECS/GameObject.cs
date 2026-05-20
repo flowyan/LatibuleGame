@@ -1,15 +1,17 @@
 ﻿using Engine.Rendering;
+using Engine.Utilities;
 using JoltPhysicsSharp;
 using OpenTK.Windowing.Common;
 
 namespace Engine.Core.ECS;
 
-public class GameObject() : IDisposable
+public class GameObject : IDisposable
 {
     public Transform Transform { get; set; } = new();
     public GameObject? Parent { get; private set; }
     public GameObject[] Children { get; private set; } = Array.Empty<GameObject>();
     public BodyID? PhysicsBodyID { get; set; }
+    public JoltColor DebugColor { get; set; } = new(255, 255, 255);
 
     private readonly Dictionary<Type, IComponent> _byType = new();
 
@@ -50,6 +52,17 @@ public class GameObject() : IDisposable
     public virtual void Dispose()
     {
         foreach (var component in Components) component.Dispose();
+    }
+
+    public void SyncPhysicsBodyID()
+    {
+        if (PhysicsBodyID != null)
+            LatibuleEngine.Physics.BodyInterface.SetPositionAndRotation(
+                PhysicsBodyID.Value,
+                Transform.Position.ToNumerics(),
+                Transform.Rotation.ToQuaternion(),
+                Activation.Activate
+            );
     }
 
     public void AddChild(GameObject child)
@@ -114,5 +127,10 @@ public class GameObject() : IDisposable
     public override string ToString()
     {
         return $"({GetHashCode()}) {GetType().Name} at ({Transform.Position.X},{Transform.Position.Y},{Transform.Position.Z})";
+    }
+
+    public string EditorName()
+    {
+        return $"{GetType().Name} ({GetHashCode()})";
     }
 }
