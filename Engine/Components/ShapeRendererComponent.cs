@@ -1,4 +1,6 @@
 ﻿using Engine.Core.ECS;
+using Engine.Data;
+using Engine.Data.Shaders;
 using Engine.Rendering.Helpers;
 using Engine.Rendering.Renderer;
 using OpenTK.Mathematics;
@@ -14,7 +16,7 @@ public class ShapeRendererComponent(Shape shape) : BaseComponent
     {
         base.OnLoad(gameObject);
 
-        var shaderComponent = gameObject.Require<ShaderComponent>();
+        var shaderComponent = gameObject.Get<ShaderComponent>() ?? new ShaderComponent(Asseteer.GetShader(EngineShaders.DefaultShader));
         var textureComponent = gameObject.Get<TextureComponent>();
 
         _renderer = new ShapeRenderer(
