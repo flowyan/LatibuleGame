@@ -12,4 +12,5 @@ public static class Metadata
     public const string ASSETS_SHADER_PATH = "shader";
     public const string ASSETS_FONT_PATH = "font";
     public const string ASSETS_MODEL_PATH = "model";
+    public const string ASSETS_CUBEMAP_PATH = "cubemap";
 }
