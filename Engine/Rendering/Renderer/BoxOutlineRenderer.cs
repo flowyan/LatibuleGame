@@ -9,7 +9,7 @@ using OpenTK.Mathematics;
 
 namespace Engine.Rendering.Renderer;
 
-public class BoundingBoxOutlineRenderer : IDisposable
+public class BoxOutlineRenderer : IDisposable
 {
     private Shader _lineShader;
 
@@ -21,7 +21,7 @@ public class BoundingBoxOutlineRenderer : IDisposable
     private int _vao;
     private int _vbo;
 
-    public BoundingBoxOutlineRenderer()
+    public BoxOutlineRenderer()
     {
         _lineShader = Asseteer.GetShader(EngineShaders.DebugUi);
 
@@ -59,7 +59,7 @@ public class BoundingBoxOutlineRenderer : IDisposable
         GL.BindVertexArray(0);
     }
 
-    public void Render(BoundingBox box, Color color)
+    public void Render(Box box, Color color)
     {
         if (!EngineStates.EnabledDebugOverlays[DebugOverlayType.BoundingBoxes]) return;
 

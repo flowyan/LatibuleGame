@@ -13,12 +13,12 @@ namespace Latibule.Components;
 
 public class DebugBoundingBoxOutlineOverlay : BaseComponent
 {
-    private BoundingBoxOutlineRenderer _renderer;
+    private BoxOutlineRenderer _renderer;
 
     public DebugBoundingBoxOutlineOverlay()
     {
         RenderLayer = RenderLayer.DebugOutline;
-        _renderer = new BoundingBoxOutlineRenderer();
+        _renderer = new BoxOutlineRenderer();
     }
 
     public override void OnRenderFrame(FrameEventArgs args)
@@ -28,10 +28,5 @@ public class DebugBoundingBoxOutlineOverlay : BaseComponent
 
         GL.Enable(EnableCap.DepthTest); // occluded by world
         // GL.Disable(EnableCap.DepthTest);  // always visible
-
-        // _renderer.Render(LatibuleGame.Player.BoundingBox, Color.White);
-
-        foreach (var boundingBox in LatibuleEngine.Map.GetBoundingBoxes())
-            _renderer.Render(boundingBox, Color.Yellow);
     }
 }

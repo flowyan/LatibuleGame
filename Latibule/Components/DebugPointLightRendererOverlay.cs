@@ -5,10 +5,9 @@ using Engine.Core.ECS;
 using Engine.Core.Types;
 using Engine.Data;
 using Engine.Data.Textures;
+using Engine.Physics;
 using Engine.Rendering;
 using Engine.Rendering.Renderer;
-using Engine.Utilities;
-using Latibule.Core.Types;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 
@@ -17,14 +16,14 @@ namespace Latibule.Components;
 public class DebugPointLightRendererOverlay : BaseComponent
 {
     private Texture2D _pointLightTexture;
-    private BoundingBoxOutlineRenderer _outlineRenderer;
+    private BoxOutlineRenderer _outlineRenderer;
 
     public override void OnLoad(GameObject gameObject)
     {
         base.OnLoad(gameObject);
         RenderLayer = RenderLayer.Transparent;
         _pointLightTexture = Asseteer.GetTexture(EngineTextures.Icon.pointlight);
-        _outlineRenderer = new BoundingBoxOutlineRenderer();
+        _outlineRenderer = new BoxOutlineRenderer();
     }
 
     public override void OnRenderFrame(FrameEventArgs args)
@@ -35,7 +34,7 @@ public class DebugPointLightRendererOverlay : BaseComponent
         foreach (var light in LatibuleEngine.Map.Lights)
         {
             if (light is null) continue;
-            var box = AabbHelper.CreateFromCenterRotationScale(light.Position, new Vector3(0.25f), Vector3.Zero);
+            var box = Box.CreateFromCenterAndSize(light.Position, new Vector3(0.25f));
             _outlineRenderer.Render(box, Color.DeepPink);
 
             var _icon = new BillboardImageRenderer(new Transform(light.Position, new Vector3(0.25f)), _pointLightTexture);

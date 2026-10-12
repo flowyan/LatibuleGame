@@ -30,18 +30,18 @@ public static class TestingMap
                 Scale = new Vector3(2, 2, 2),
                 Rotation = new Vector3(0, 270, 0)
             }
-        }.WithComponents(new ShaderComponent(meshShader), new ShapeRendererComponent(new IsoSphere(8)), new BoundingBoxComponent(), new TextureComponent(Asseteer.GetTexture(Textures.Misc.tequila))));
+        }.WithComponents(new ShaderComponent(meshShader), new ShapeRendererComponent(new IsoSphere(8)), new TextureComponent(Asseteer.GetTexture(Textures.Misc.tequila))));
 
         world.AddObject(new GameObject
         {
             Transform = { Position = new Vector3(0, 1, -7.5f), Scale = new Vector3(0.5f) }
-        }.WithComponents(new ShaderComponent(meshShader), new ShapeRendererComponent(new Cube()), new BoundingBoxComponent(), new TextureComponent(Asseteer.GetTexture(Textures.Misc.speaker))));
+        }.WithComponents(new ShaderComponent(meshShader), new ShapeRendererComponent(new Cube()), new TextureComponent(Asseteer.GetTexture(Textures.Misc.speaker))));
 
         world.AddPointLight(new PointLight { Position = new Vector3(5, 1.5f, 0), Color = new Vector3(0f, 1f, 0f), Intensity = 0.5f });
         world.AddObject(new GameObject
         {
             Transform = { Position = new Vector3(5, 0.5f, 0), Scale = new Vector3(0.5f) }
-        }.WithComponents(new ShaderComponent(meshShader), new ShapeRendererComponent(new Cube()), new BoundingBoxComponent(), new TextureComponent(Asseteer.GetTexture(Textures.Misc.greensquare))));
+        }.WithComponents(new ShaderComponent(meshShader), new ShapeRendererComponent(new Cube()), new TextureComponent(Asseteer.GetTexture(Textures.Misc.greensquare))));
 
 
         // floor

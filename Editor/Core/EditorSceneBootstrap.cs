@@ -38,18 +38,18 @@ public static class EditorSceneBootstrap
                 Scale = new Vector3(2, 2, 2),
                 Rotation = new Vector3(0, 270, 0)
             }
-        }.WithComponents(new ShaderComponent(meshShader), new ShapeRendererComponent(new IsoSphere(8)), new BoundingBoxComponent(), new TextureComponent(Asseteer.GetTexture(Textures.Misc.tequila))));
+        }.WithComponents(new ShaderComponent(meshShader), new ShapeRendererComponent(new IsoSphere(8)), new TextureComponent(Asseteer.GetTexture(Textures.Misc.tequila))));
 
         world.AddObject(new GameObject
         {
             Transform = { Position = new Vector3(0, 1, -7.5f), Scale = new Vector3(0.5f) }
-        }.WithComponents(new ShaderComponent(meshShader), new ShapeRendererComponent(new Cube()), new BoundingBoxComponent(), new TextureComponent(Asseteer.GetTexture(Textures.Misc.speaker))));
+        }.WithComponents(new ShaderComponent(meshShader), new ShapeRendererComponent(new Cube()), new TextureComponent(Asseteer.GetTexture(Textures.Misc.speaker))));
 
         world.AddPointLight(new PointLight { Position = new Vector3(5, 1.5f, 0), Color = new Vector3(0f, 1f, 0f), Intensity = 0.5f });
         world.AddObject(new GameObject
         {
             Transform = { Position = new Vector3(5, 0.5f, 0), Scale = new Vector3(0.5f) }
-        }.WithComponents(new ShaderComponent(meshShader), new ShapeRendererComponent(new Cube()), new BoundingBoxComponent(), new TextureComponent(Asseteer.GetTexture(Textures.Misc.greensquare))));
+        }.WithComponents(new ShaderComponent(meshShader), new ShapeRendererComponent(new Cube()), new TextureComponent(Asseteer.GetTexture(Textures.Misc.greensquare))));
 
 
         // floor
@@ -101,7 +101,7 @@ public static class EditorSceneBootstrap
         world.AddObject(new Maxwell { Transform = { Position = new Vector3(2, 0.5f, 8.5f) } });
 
         world.AddObject(new UmbrellaMan { Transform = { Position = new Vector3(2, 0.5f, -8.5f) } });
-        
+
         LatibuleEngine.Map = world;
 
         var direction = Vector3Direction.Forward;
@@ -114,7 +114,7 @@ public static class EditorSceneBootstrap
         LatibuleEngine.Camera.Update();
 
         world.OnLoad();
-        
+
         List<GameObject> objectTexts = [];
         const float boxScale = 0.1f;
         // this has to run after OnLoad, since a lot of objects have their physics bodies created in OnLoad
@@ -128,12 +128,12 @@ public static class EditorSceneBootstrap
                 MotionType.Static,
                 JoltPhysics.Layers.NonMoving
             ), Activation.DontActivate);
-            
-            objectTexts.Add(new EditorObjectText($"{obj}", BillboardEnum.Full, FSColor.Green) {Transform = { Position = obj.Transform.Position + new Vector3(0, 0, 0) } });
+
+            objectTexts.Add(new EditorObjectText($"{obj}", BillboardEnum.Full, FSColor.Green) { Transform = { Position = obj.Transform.Position + new Vector3(0, 0, 0) } });
         }
-        
+
         // world.AddObjects(objectTexts);
-        
+
         _initialized = true;
     }
 }

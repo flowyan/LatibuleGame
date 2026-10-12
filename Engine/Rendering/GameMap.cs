@@ -1,11 +1,9 @@
-﻿using Engine.Components;
-using Engine.Core;
+﻿using Engine.Core;
 using Engine.Core.ECS;
 using Engine.Rendering.Helpers;
 using Engine.Rendering.Renderer;
 using JoltPhysicsSharp;
 using OpenTK.Windowing.Common;
-using BoundingBox = Engine.Physics.BoundingBox;
 
 namespace Engine.Rendering;
 
@@ -17,7 +15,6 @@ public class GameMap
 
     private SkyboxRenderer? _skyboxRenderer { get; set; }
 
-    private BoundingBox[] _boundingBoxes = Array.Empty<BoundingBox>();
     private MutableTuple<BodyID, JoltColor>[] _bodyIds = [];
     private readonly Queue<GameObject> _pendingAdds = [];
     private readonly Queue<GameObject> _pendingRemoves = [];
@@ -112,20 +109,6 @@ public class GameMap
             if (!Objects.Contains(obj))
                 Objects.Add(obj);
         }
-    }
-
-    public BoundingBox[] GetBoundingBoxes()
-    {
-        if (_boundingBoxes.Length != Objects.Count)
-            _boundingBoxes = new BoundingBox[Objects.Count];
-
-        for (int i = 0; i < Objects.Count; i++)
-        {
-            var box = Objects[i].Get<BoundingBoxComponent>()?.BoundingBox;
-            if (box != null) _boundingBoxes[i] = box.Value;
-        }
-
-        return _boundingBoxes;
     }
 
     public MutableTuple<BodyID, JoltColor>[] GetBodyIDs()

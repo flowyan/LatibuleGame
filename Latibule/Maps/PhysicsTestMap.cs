@@ -1,6 +1,7 @@
 ﻿using Engine.Components;
 using Engine.Core.Types;
 using Engine.Data;
+using Engine.Data.Cubemaps;
 using Engine.Data.Textures;
 using Engine.Rendering;
 using Latibule.Components;
@@ -12,9 +13,14 @@ namespace Latibule.Maps;
 
 public static class PhysicsTestMap
 {
+    private static GameMapOptions _options => new()
+    {
+        SkyboxTexture = Asseteer.GetCubemapTexture(EngineCubemaps.skybox_logl)
+    };
+
     public static GameMap Create()
     {
-        var map = new GameMap();
+        var map = new GameMap(_options);
 
         // floor
         map.AddObject(new PlaneObject { Transform = { Position = new Vector3(0, 0, 0), Scale = new Vector3(10, 0, 10) } }

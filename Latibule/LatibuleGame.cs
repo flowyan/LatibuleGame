@@ -40,9 +40,9 @@ public class LatibuleGame : EngineWindow
 
         // Load the essential assets
         CursorState = CursorState.Grabbed;
-        // LatibuleEngine.Map = TestingMap.Create();
+        LatibuleEngine.Map = TestingMap.Create();
 
-        LatibuleEngine.Map = PhysicsTestMap.Create();
+        // LatibuleEngine.Map = PhysicsTestMap.Create();
         LatibuleEngine.Map.OnLoad();
 
         // Asseteer.PlaySteamAudioSound(SoundAsset.scarletfire, new Vector3(0, 1, -7.5f), 0.75f);
