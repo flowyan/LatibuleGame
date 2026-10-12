@@ -3,6 +3,7 @@ using System.Drawing;
 using Engine.Core;
 using Engine.Core.ImGuiNet;
 using Engine.Data;
+using Engine.Data.Cubemaps;
 using Engine.Rendering;
 using Engine.Rendering.Renderer;
 using Engine.Services;
@@ -24,8 +25,11 @@ public class EngineWindow : GameWindow
         Metadata.ASSETS_SOUND_PATH,
         Metadata.ASSETS_SHADER_PATH,
         Metadata.ASSETS_FONT_PATH,
-        Metadata.ASSETS_MODEL_PATH
+        Metadata.ASSETS_MODEL_PATH,
+        Metadata.ASSETS_CUBEMAP_PATH
     ));
+    
+    public static SkyboxRenderer _SkyboxRenderer { get; private set; } = null!;
 
     public EngineWindow(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings) : base(
         gameWindowSettings,
@@ -51,6 +55,8 @@ public class EngineWindow : GameWindow
         Asseteer.LoadAssets();
 
         LatibuleEngine.Physics.SetupJoltPhysics();
+        
+        _SkyboxRenderer = new SkyboxRenderer(Asseteer.GetCubemapTexture(EngineCubemaps.skybox_1));
     }
 
     protected override void OnUpdateFrame(FrameEventArgs args)

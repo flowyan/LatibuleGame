@@ -2,6 +2,7 @@
 
 public enum RenderLayer
 {
+    Skybox,
     World,
     DebugOutline,
     WorldText,

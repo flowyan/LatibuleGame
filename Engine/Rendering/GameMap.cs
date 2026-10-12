@@ -15,11 +15,19 @@ public class GameMap
 
     public PointLight?[] Lights { get; set; } = new PointLight?[LightRenderer.MAX_POINT_LIGHTS];
 
+    private SkyboxRenderer? _skyboxRenderer { get; set; }
+
     private BoundingBox[] _boundingBoxes = Array.Empty<BoundingBox>();
     private MutableTuple<BodyID, JoltColor>[] _bodyIds = [];
     private readonly Queue<GameObject> _pendingAdds = [];
     private readonly Queue<GameObject> _pendingRemoves = [];
     private bool _isIterating = false;
+
+    public GameMap(GameMapOptions? options = null)
+    {
+        if (options == null) return;
+        _skyboxRenderer = new SkyboxRenderer(options.SkyboxTexture);
+    }
 
     public void OnLoad()
     {
@@ -33,7 +41,7 @@ public class GameMap
     {
         if (DevConsole.IsOpen) return;
         LatibuleEngine.Physics.OnUpdateFrame(args);
-        
+
         _isIterating = true;
         foreach (var obj in Objects) obj.OnUpdateFrame(args);
         _isIterating = false;
@@ -42,6 +50,8 @@ public class GameMap
 
     public void OnRenderFrame(FrameEventArgs args, RenderLayer layer)
     {
+        if (layer == RenderLayer.Skybox) _skyboxRenderer?.Render();
+
         _isIterating = true;
         foreach (var obj in Objects) obj.OnRenderFrame(args, layer);
         _isIterating = false;
