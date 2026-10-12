@@ -10,7 +10,7 @@ namespace Engine.Rendering.Renderer;
 public class ShapeRenderer : IRenderable, IDisposable
 {
     private Shader _shader = null!;
-    private Texture? _texture;
+    private Texture2D? _texture;
     private Transform _transform;
 
     private BufferObject<VertexPositionTextureNormal>? _vertexBuffer;
@@ -18,7 +18,7 @@ public class ShapeRenderer : IRenderable, IDisposable
     private VertexArrayObject? _vao;
     private int _indexCount;
 
-    public ShapeRenderer(Shader shader, Shape shape, Transform transform, Texture? texture, Vector2 uvScale, float uvRotation)
+    public ShapeRenderer(Shader shader, Shape shape, Transform transform, Texture2D? texture, Vector2 uvScale, float uvRotation)
     {
         _shader = shader;
         _transform = transform;

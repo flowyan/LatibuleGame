@@ -13,12 +13,12 @@ public class ViewModelChungus
     public ViewModelRenderer? Renderer { get; set; }
 
     public Scene Model { get; set; }
-    public Texture[] Textures { get; set; }
+    public Texture2D[] Textures { get; set; }
     public Vector3 Position { get; set; }
     public Vector3 Rotation { get; set; }
     public Vector3 Scale { get; set; }
 
-    public ViewModelChungus(Scene model, Texture[] textures, Vector3 position, Vector3 rotation, Vector3 scale)
+    public ViewModelChungus(Scene model, Texture2D[] textures, Vector3 position, Vector3 rotation, Vector3 scale)
     {
         var _shader = Asseteer.GetShader(EngineShaders.DefaultShader);
         Model = model;

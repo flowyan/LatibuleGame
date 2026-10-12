@@ -6,21 +6,21 @@ namespace Engine.Components;
 
 public class TextureComponent : BaseComponent
 {
-    public Texture[] Textures { get; set; }
+    public Texture2D[] Textures { get; set; }
     public Vector2 UVScale { get; }
     public float UVRotation { get; }
 
-    public TextureComponent(Texture texture, Vector2? uvscale = null, float uvrotate = 0f)
+    public TextureComponent(Texture2D texture, Vector2? uvscale = null, float uvrotate = 0f)
         : this([texture], uvscale, uvrotate)
     {
     }
 
-    public TextureComponent(Vector2? uvscale = null, float uvrotate = 0f, params Texture[] textures)
+    public TextureComponent(Vector2? uvscale = null, float uvrotate = 0f, params Texture2D[] textures)
         : this(textures, uvscale, uvrotate)
     {
     }
 
-    public TextureComponent(Texture[] textures, Vector2? uvscale = null, float uvrotate = 0f)
+    public TextureComponent(Texture2D[] textures, Vector2? uvscale = null, float uvrotate = 0f)
     {
         if (textures is null || textures.Length == 0)
             throw new ArgumentException("At least one texture is required.", nameof(textures));

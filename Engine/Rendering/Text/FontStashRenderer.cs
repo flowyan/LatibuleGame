@@ -199,7 +199,7 @@ public class FontStashRenderer : IFontStashRenderer2, IDisposable
     {
         if (_vertexIndex == 0) return;
         _vertexBuffer.SetData(_vertexData, 0, _vertexIndex);
-        var texture = (Texture)_lastTexture;
+        var texture = (Texture2D)_lastTexture;
         texture.Bind();
         GL.DrawElements(PrimitiveType.Triangles, _vertexIndex * 6 / 4, DrawElementsType.UnsignedShort, IntPtr.Zero);
         _vertexIndex = 0;

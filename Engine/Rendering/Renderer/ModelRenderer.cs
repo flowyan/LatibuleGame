@@ -18,10 +18,10 @@ public class ModelRenderer : IRenderable, IDisposable
     private readonly Shader _shader;
     private readonly Scene _scene;
     private readonly Transform _transform;
-    protected Texture _fallback;
+    protected Texture2D _fallback;
 
-    protected IReadOnlyList<Texture>? _texturesByMaterial;
-    protected Texture? _forceAllTexture;
+    protected IReadOnlyList<Texture2D>? _texturesByMaterial;
+    protected Texture2D? _forceAllTexture;
 
     private readonly List<GpuMesh> _meshes = [];
 
@@ -32,8 +32,8 @@ public class ModelRenderer : IRenderable, IDisposable
         Shader shader,
         Scene model,
         Transform transform,
-        IReadOnlyList<Texture>? texturesByMaterial,
-        Texture? forceAllTexture = null
+        IReadOnlyList<Texture2D>? texturesByMaterial,
+        Texture2D? forceAllTexture = null
     )
     {
         _shader = shader;
@@ -133,7 +133,7 @@ public class ModelRenderer : IRenderable, IDisposable
 
         GL.ActiveTexture(TextureUnit.Texture0);
 
-        Texture tex = _fallback;
+        Texture2D tex = _fallback;
 
         // 1) If forced, always use it
         if (_forceAllTexture != null)

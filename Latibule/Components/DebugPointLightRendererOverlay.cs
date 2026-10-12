@@ -16,7 +16,7 @@ namespace Latibule.Components;
 
 public class DebugPointLightRendererOverlay : BaseComponent
 {
-    private Texture _pointLightTexture;
+    private Texture2D _pointLightTexture;
     private BoundingBoxOutlineRenderer _outlineRenderer;
 
     public override void OnLoad(GameObject gameObject)

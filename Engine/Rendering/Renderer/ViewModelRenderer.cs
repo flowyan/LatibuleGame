@@ -22,8 +22,8 @@ public class ViewModelRenderer : ModelRenderer
         Shader shader,
         Scene model,
         Transform transform,
-        IReadOnlyList<Texture>? texturesByMaterial,
-        Texture? forceAllTexture = null
+        IReadOnlyList<Texture2D>? texturesByMaterial,
+        Texture2D? forceAllTexture = null
     ) : base(shader, model, transform, texturesByMaterial, forceAllTexture)
     {
         _shader = shader;

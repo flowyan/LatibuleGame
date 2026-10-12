@@ -15,7 +15,7 @@ public class TextureOptions
     public TextureMagFilter MagFilter = TextureMagFilter.Nearest;
 }
 
-public class Texture : IDisposable
+public class Texture2D : IDisposable
 {
     private int _handle;
 
@@ -23,7 +23,7 @@ public class Texture : IDisposable
     public readonly int Height;
     public bool HasTransparency { get; private set; }
 
-    public Texture(int width, int height, TextureOptions? options = null)
+    public Texture2D(int width, int height, TextureOptions? options = null)
     {
         options ??= new TextureOptions();
         Width = width;
@@ -40,7 +40,7 @@ public class Texture : IDisposable
         SetParameters(options);
     }
 
-    public Texture(string path, TextureOptions? options = null)
+    public Texture2D(string path, TextureOptions? options = null)
     {
         options ??= new TextureOptions();
         _handle = GL.GenTexture();

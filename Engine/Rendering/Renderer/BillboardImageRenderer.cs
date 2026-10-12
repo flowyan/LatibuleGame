@@ -13,7 +13,7 @@ namespace Engine.Rendering.Renderer;
 public class BillboardImageRenderer : IRenderable, IDisposable
 {
     private Shader _shader;
-    private Texture? _texture;
+    private Texture2D? _texture;
     private Transform _transform;
     private BillboardEnum _billboard;
 
@@ -22,7 +22,7 @@ public class BillboardImageRenderer : IRenderable, IDisposable
     private VertexArrayObject? _vao;
     private int _indexCount;
 
-    public BillboardImageRenderer(Transform transform, Texture? texture, BillboardEnum billboard = BillboardEnum.Full)
+    public BillboardImageRenderer(Transform transform, Texture2D? texture, BillboardEnum billboard = BillboardEnum.Full)
     {
         var shape = new PlaneWallShape();
 
