@@ -21,7 +21,9 @@ public class Asseteer(AsseteerPaths paths)
     public static bool Loaded { get; private set; } = false;
 
     // keyed by texture path
-    private static readonly Dictionary<string, Texture> LoadedTextures = [];
+    private static readonly Dictionary<string, Texture2D> LoadedTextures = [];
+    private static readonly Dictionary<string, CubemapTexture> LoadedCubemaps = [];
+
     // private static readonly Dictionary<string, Func<WaveStream>> LoadedSoundsList = [];
     private static readonly Dictionary<string, Shader> LoadedShaders = [];
     private static readonly Dictionary<string, Scene> LoadedModels = [];
@@ -39,6 +41,7 @@ public class Asseteer(AsseteerPaths paths)
     {
         LoadShaders();
         LoadTextures();
+        LoadCubemapTextures();
         LoadFonts();
     }
 
@@ -82,7 +85,7 @@ public class Asseteer(AsseteerPaths paths)
             var texturePath = $"{parentFolderName}{file.Name.Replace(file.Extension, "")}";
             try
             {
-                var texture = new Texture($"{paths.RootDirectory}/{paths.TextureDirectory}/{parentFolderName}{file.Name}");
+                var texture = new Texture2D($"{paths.RootDirectory}/{paths.TextureDirectory}/{parentFolderName}{file.Name}");
                 LoadedTextures[texturePath] = texture;
                 // LoadedImGuiTextures[textureName] = LatibuleGame.ImGuiRenderer.BindTexture(LoadedTextures[textureName]);
                 LogInfo($"Loaded texture: {texturePath} ({file.Name})");
@@ -94,7 +97,68 @@ public class Asseteer(AsseteerPaths paths)
         }
     }
 
-    public static Texture GetTexture<TEnum>(TEnum textureAsset) where TEnum : struct, Enum
+    // structure:
+    // cubemap
+    //      - cubemap_name
+    //         - right.png
+    //         - left.png and so on
+    private void LoadCubemapTextures()
+    {
+        var cubemapDir = new DirectoryInfo($"{paths.RootDirectory}/{paths.CubemapDirectory}");
+        if (!cubemapDir.Exists) throw new Exception($"Missing cubemap directory: {cubemapDir.FullName}");
+
+        string[] filter =
+        [
+            "back",
+            "bottom",
+            "front",
+            "left",
+            "right",
+            "top"
+        ];
+
+        // goes by folder and then gets every file (should be max of six)
+        foreach (var folder in cubemapDir.EnumerateDirectories(searchPattern: "*", searchOption: SearchOption.TopDirectoryOnly))
+        {
+            var cubemapPaths = new Dictionary<string, string>(); // [face] = path
+            foreach (var file in folder.EnumerateFiles(searchPattern: "*.*", searchOption: SearchOption.TopDirectoryOnly))
+            {
+                var face = Path.GetFileNameWithoutExtension(file.Name).ToLowerInvariant();
+                if (!filter.Contains(face))
+                {
+                    LogWarning($"{file.Name} in cubemap folder '{folder.Name}' does not match expected face names. Skipping.");
+                    continue;
+                }
+
+                var parentFolderName = file.Directory?.Name == paths.CubemapDirectory ? "" : $"{file.Directory?.Name}/";
+                cubemapPaths[face] = $"{paths.RootDirectory}/{paths.CubemapDirectory}/{parentFolderName}{file.Name}";
+            }
+
+            if (cubemapPaths.Count == 6)
+            {
+                LoadedCubemaps[folder.Name] = new CubemapTexture([
+                    cubemapPaths["right"],
+                    cubemapPaths["left"],
+                    cubemapPaths["top"],
+                    cubemapPaths["bottom"],
+                    cubemapPaths["front"],
+                    cubemapPaths["back"]
+                ]);
+            }
+            else if (cubemapPaths.Count != 6)
+            {
+                LogError($"Cubemap folder '{folder.Name}' does not contain exactly 6 images. Skipping. (Replaced with missing textures)");
+                LoadedCubemaps[folder.Name] = GetMissingCubemap(paths);
+            }
+            else
+            {
+                LogError($"Cubemap folder '{folder.Name}' contains no valid images. Skipping. (Replaced with missing textures)");
+                LoadedCubemaps[folder.Name] = GetMissingCubemap(paths);
+            }
+        }
+    }
+
+    public static Texture2D GetTexture<TEnum>(TEnum textureAsset) where TEnum : struct, Enum
     {
         var enumType = typeof(TEnum);
         var enumTypeName = enumType.Name.ToLowerInvariant(); // Dev -> dev
@@ -109,12 +173,18 @@ public class Asseteer(AsseteerPaths paths)
         return GetMissingTexture();
     }
 
-    private static Texture GetMissingTexture()
+    private static Texture2D GetMissingTexture()
     {
         return LoadedTextures.TryGetValue("missing", out var missing) ? missing : throw new InvalidOperationException("Missing texture was not loaded.");
     }
 
-    public static Texture[] GetTextures<TEnum>(params TEnum[] textureAssets)
+    private static CubemapTexture GetMissingCubemap(AsseteerPaths paths)
+    {
+        var missingPath = $"{paths.RootDirectory}/{paths.TextureDirectory}/dev/missing.png";
+        return new CubemapTexture([missingPath, missingPath, missingPath, missingPath, missingPath, missingPath]);
+    }
+
+    public static Texture2D[] GetTextures<TEnum>(params TEnum[] textureAssets)
         where TEnum : struct, Enum
     {
         return textureAssets
@@ -133,6 +203,17 @@ public class Asseteer(AsseteerPaths paths)
                 return GetMissingTexture();
             })
             .ToArray();
+    }
+
+    public static CubemapTexture GetCubemapTexture<TEnum>(TEnum cubemapAsset) where TEnum : struct, Enum
+    {
+        var assetName = cubemapAsset.ToString(); // skybox_1
+
+        if (LoadedCubemaps.TryGetValue(assetName, out var cubemap))
+            return cubemap;
+
+        LogError($"Cubemap '{assetName}' was not found.");
+        throw new KeyNotFoundException($"Cubemap '{assetName}' was not found.");
     }
 
     private void LoadSounds()

@@ -6,7 +6,8 @@ public class AsseteerPaths(
     string soundDirectory,
     string shaderDirectory,
     string fontDirectory,
-    string modelDirectory
+    string modelDirectory,
+    string cubemapDirectory
 )
 {
     public string RootDirectory { get; } = rootDirectory;
@@ -15,4 +16,5 @@ public class AsseteerPaths(
     public string ShaderDirectory { get; } = shaderDirectory;
     public string FontDirectory { get; } = fontDirectory;
     public string ModelDirectory { get; } = modelDirectory;
+    public string CubemapDirectory { get; } = cubemapDirectory;
 }
