@@ -6,5 +6,6 @@ public abstract partial class EngineSounds
     {
         missing,
         tada,
+        pingas,
     }
 }
