@@ -75,7 +75,7 @@ public class Player : GameObject
         {
             Shape = new BoxShape(new BoxShapeSettings(
                 new Vector3(Width / 2, Height / 2, Depth / 2).ToNumerics(),
-                0.01f // the "roundness" of the box shape
+                0.05f // the "roundness" of the box shape
             )),
             Layer = JoltPhysics.Layers.Moving,
             EnhancedInternalEdgeRemoval = true,
