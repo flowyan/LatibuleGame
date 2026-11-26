@@ -5,12 +5,12 @@ using System.Diagnostics;
 using System.Reflection;
 using Engine.Core;
 using Engine.Core.ImGuiNet;
-using Engine.Rendering.Renderer;
 using ImGuiNET;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using SDL3;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace Engine.Windowing;
 
@@ -66,6 +66,7 @@ public class EngineAppWindow : SDL.IMainCallbacks<EngineAppWindow>, IDisposable
     private bool _disposed;
 
     private string _title;
+    private readonly string? _iconPath;
 
     // Both of these are used to cache the size and location of the window before going into full screen mode.
     // When getting out of full screen mode, the location and size will be set to these value in all states other then minimized.
@@ -174,6 +175,33 @@ public class EngineAppWindow : SDL.IMainCallbacks<EngineAppWindow>, IDisposable
         }
         set => SDL.SetWindowSize(WindowPtr, value.X, value.Y);
     }
+    
+    public unsafe void SetIcon(string path)
+    {
+        using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(Path.Combine(AppContext.BaseDirectory, path));
+
+        var pixels = new byte[image.Width * image.Height * 4];
+        image.CopyPixelDataTo(pixels);
+
+        fixed (byte* data = pixels)
+        {
+            var surface = SDL.CreateSurfaceFrom(
+                image.Width, image.Height,
+                SDL.PixelFormat.ABGR8888, // ABGR8888 matches R,G,B,A byte order on little-endian PCs
+                (nint)data, image.Width * 4);
+
+            if (surface == 0)
+            {
+                Console.Error.WriteLine($"Could not create icon surface: {SDL.GetError()}");
+                return;
+            }
+
+            if (!SDL.SetWindowIcon(WindowPtr, surface))
+                Console.Error.WriteLine($"Could not set window icon: {SDL.GetError()}");
+
+            SDL.DestroySurface(surface);
+        }
+    }
 
     private void InitializeNative()
     {
@@ -204,6 +232,9 @@ public class EngineAppWindow : SDL.IMainCallbacks<EngineAppWindow>, IDisposable
 
         if (WindowPtr == IntPtr.Zero)
             throw new InvalidOperationException($"SDL window creation failed: {SDL.GetError()}");
+        
+        if (_iconPath is not null)
+            SetIcon(_iconPath);
 
         _glContext = SDL.GLCreateContext(WindowPtr);
 
@@ -275,6 +306,7 @@ public class EngineAppWindow : SDL.IMainCallbacks<EngineAppWindow>, IDisposable
     {
         _title = settings.Title;
         _cachedWindowClientSize = settings.ClientSize;
+        _iconPath = settings.IconPath;
     }
 
     public static SDL.AppResult AppInit(

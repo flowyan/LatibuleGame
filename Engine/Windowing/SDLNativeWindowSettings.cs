@@ -18,6 +18,9 @@ public class SDLNativeWindowSettings
     /// </summary>
     public string Title { get; set; } = "OpenTK Window";
 
+    /// <summary>Path to the window icon. Null means no custom icon.</summary>
+    public string? IconPath { get; set; }
+
     public Vector2i ClientSize { get; set; } = new(1280, 720);
 
     /// <summary>

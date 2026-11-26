@@ -1,4 +1,5 @@
-﻿using Engine.Windowing;
+﻿using Engine.Utilities;
+using Engine.Windowing;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
@@ -25,6 +26,7 @@ public static class Program
     {
         ClientSize = new Vector2i(1920, 1080),
         Title = $"{Metadata.GAME_NAME} {Metadata.GAME_VERSION}",
+        IconPath = "Assets/icon.jpg",
         APIVersion = new Version(4, 6),
     };
 

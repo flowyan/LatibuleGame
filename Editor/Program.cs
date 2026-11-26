@@ -1,11 +1,7 @@
-﻿using Editor.Core;
-using Engine.Core;
-using Engine.Utilities;
-using Engine.Windowing;
+﻿using Engine.Windowing;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using SDL3;
 using Metadata = Editor.Core.Metadata;
 
@@ -29,6 +25,7 @@ public static class Program
     {
         ClientSize = new Vector2i(1920, 1080),
         Title = $"{Metadata.EDITOR_NAME} {Metadata.EDITOR_VERSION}",
+        IconPath = "Assets/icon.jpg",
         APIVersion = new Version(4, 6),
     };
 
