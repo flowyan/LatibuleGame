@@ -32,9 +32,11 @@ public static class AudioEngine
         if (MixerDevice == IntPtr.Zero) throw new InvalidOperationException($"Could not open Mixer audio device: {SDL.GetError()}");
     }
 
-    public static void PlayAudio(IntPtr audio)
+    public static void PlayAudio(IntPtr audio, float volume = 1f, float pitch = 1f)
     {
         var track = Mixer.CreateTrack(MixerDevice);
+        Mixer.SetTrackFrequencyRatio(track, pitch);
+        Mixer.SetTrackGain(track, volume);
         if (track == IntPtr.Zero || !Mixer.SetTrackAudio(track, audio))
             throw new InvalidOperationException($"Could not set audio track: {SDL.GetError()}");
 
@@ -43,8 +45,7 @@ public static class AudioEngine
 
     public static void Update()
     {
-        // if (Input.IsKeyPressed(SDL.Scancode.K)) Asseteer.PlaySound(EngineSounds.Dev.pingas);
-        // if (Input.IsKeyPressed(SDL.Scancode.L)) Asseteer.PlaySound(EngineSounds.Dev.tada);
+        if (Input.IsKeyPressed(SDL.Scancode.Insert)) Asseteer.PlaySound(EngineSounds.Dev.pingas);
     }
 
     public static void Dispose()

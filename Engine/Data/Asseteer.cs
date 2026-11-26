@@ -350,7 +350,7 @@ public class Asseteer(AsseteerPaths paths)
         return LoadedModels[modelName];
     }
 
-    public static void PlaySound<TEnum>(TEnum soundAsset, float volume = 0.5f, bool randomPitch = true)
+    public static void PlaySound<TEnum>(TEnum soundAsset, float volume = 1f, bool randomPitch = false)
         where TEnum : struct, Enum
     {
         var folder = typeof(TEnum).Name.ToLowerInvariant();
@@ -363,7 +363,15 @@ public class Asseteer(AsseteerPaths paths)
             return;
         }
 
-        AudioEngine.PlayAudio(loadedAudio);
+        var pitch = 1f;
+        if (randomPitch)
+        {
+            const double min = 0.8;
+            const double max = 1.2;
+            pitch = (float)(min + LatibuleEngine.Rng.NextDouble() * (max - min));
+        }
+
+        AudioEngine.PlayAudio(loadedAudio, volume, pitch);
         // AudioEngine.PendingAudios.Add(loadedAudio);
     }
 
