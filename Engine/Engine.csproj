@@ -17,7 +17,7 @@
       <PackageReference Include="SDL3-CS" Version="3.4.20" />
       <PackageReference Include="SDL3-CS.Linux" Version="3.4.20" />
       <PackageReference Include="SDL3-CS.Linux.Mixer" Version="3.2.4.15" />
-      <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+      <PackageReference Include="SixLabors.ImageSharp" Version="3.2.0" />
       <PackageReference Include="SteamAudio.NET" Version="4.6.1" />
     </ItemGroup>
 
