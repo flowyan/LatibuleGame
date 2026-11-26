@@ -5,7 +5,6 @@ using Engine;
 using Engine.Audio;
 using Engine.Core;
 using Engine.Core.ECS;
-using Engine.Core.ImGuiNet;
 using Engine.Core.Types;
 using Engine.Utilities;
 using Engine.Windowing;
@@ -46,6 +45,7 @@ public class MalletEditor : LatibuleEngine
         Environment.SetEnvironmentVariable("MALLET_INSTANCE", "TRUE");
         // GameStateManager.Initialize(this);
         // CenterWindow();
+        TargetFps = EditorOptions.TargetFPS;
     }
 
     protected override void OnLoad()

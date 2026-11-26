@@ -22,6 +22,19 @@ public class EngineAppWindow : SDL.IMainCallbacks<EngineAppWindow>, IDisposable
     public static ImGuiSDL3 ImGuiSdl3Platform;
     public static ImGuiGLRenderer ImGuiRenderer;
 
+    private int _targetFps = 0;
+
+    /// <summary>Frame rate cap. 0 means uncapped.</summary>
+    public int TargetFps
+    {
+        get => _targetFps;
+        set
+        {
+            _targetFps = Math.Max(value, 0);
+            SDL.SetHint(SDL.Hints.MainCallbackRate, _targetFps.ToString());
+        }
+    }
+    
     private CursorState _cursorState = CursorState.Grabbed;
 
     public CursorState CursorState
@@ -166,6 +179,8 @@ public class EngineAppWindow : SDL.IMainCallbacks<EngineAppWindow>, IDisposable
     {
         if (!SDL.Init(SDL.InitFlags.Video | SDL.InitFlags.Audio))
             throw new InvalidOperationException($"SDL init failed: {SDL.GetError()}");
+        
+        TargetFps = _targetFps;
 
         SetGLAttribute(SDL.GLAttr.ContextMajorVersion, 4);
         SetGLAttribute(SDL.GLAttr.ContextMinorVersion, 6);
@@ -370,7 +385,7 @@ public class EngineAppWindow : SDL.IMainCallbacks<EngineAppWindow>, IDisposable
                 return SDL.AppResult.Continue;
         }
     }
-
+    
     protected virtual void OnLoad()
     {
     }

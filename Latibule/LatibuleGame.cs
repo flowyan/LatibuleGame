@@ -32,6 +32,7 @@ public class LatibuleGame : LatibuleEngine
         LogInfo($"Initializing {Metadata.GAME_NAME} version: {Metadata.GAME_VERSION}");
         GameStateManager.Initialize(this);
         // CenterWindow();
+        TargetFps = GameOptions.TargetFPS;
     }
 
     protected override void OnLoad()
