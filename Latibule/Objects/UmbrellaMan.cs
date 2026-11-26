@@ -9,6 +9,7 @@ using Engine.Utilities;
 using JoltPhysicsSharp;
 using Latibule.Data;
 using Latibule.Data.Model;
+using Latibule.Data.Sound;
 using Latibule.Data.Texture;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
