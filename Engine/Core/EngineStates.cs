@@ -1,14 +1,12 @@
 ﻿using Engine.Core.Types;
-using OpenTK.Windowing.Desktop;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using Engine.Windowing;
 
 namespace Engine.Core;
 
 public static class EngineStates
 {
-    public static MouseState MState { get; set; } = null!;
     public static bool MouseLookLocked { get; set; } = false;
-    public static GameWindow GameWindow { get; set; } = null!;
+    public static EngineAppWindow GameWindow { get; set; } = null!;
 
     // Debug related
     public static readonly bool DebugEnv = Environment.GetEnvironmentVariable("debug") == "true";
@@ -18,8 +16,7 @@ public static class EngineStates
             .Select(x => new KeyValuePair<DebugOverlayType, bool>(x, DebugEnv))
         );
 
-    public static void Initialize(GameWindow gameWindow)
+    public static void Initialize(EngineAppWindow gameWindow)
     {
-        MState = gameWindow.MouseState;
     }
 }

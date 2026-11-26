@@ -9,7 +9,7 @@ public static class LightRenderer
 
     public static void Render(Shader shader, Matrix4? lightSpaceTransform = null)
     {
-        if (EngineWindow.IS_EDITOR) return;
+        if (LatibuleEngine.IS_EDITOR) return;
         // Directional light (sun)
         var sunColor = new Vector3(0.1f, 0.1f, 0.1f);
         var sunDirection = new Vector3(0, 90, 0);

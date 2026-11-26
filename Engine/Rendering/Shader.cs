@@ -85,7 +85,7 @@ public class Shader : IDisposable
     private static bool CheckLocation(int location, string name)
     {
         if (location != -1) return false;
-        if (!EngineWindow.IS_EDITOR) Logger.LogWarning($"Uniform {name} not found in shader.");
+        if (!LatibuleEngine.IS_EDITOR) Logger.LogWarning($"Uniform {name} not found in shader.");
         return true;
     }
 

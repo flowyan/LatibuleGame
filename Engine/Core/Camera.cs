@@ -89,8 +89,8 @@ public static float Fov = EngineDefaults.FIELD_OF_VIEW_DEGREES; // Field of view
     {
         if (EngineStates.MouseLookLocked) return;
 
-        var deltaX = EngineStates.MState.Delta.X;
-        var deltaY = EngineStates.MState.Delta.Y;
+        var deltaX = Input.MouseDeltaX;
+        var deltaY = Input.MouseDeltaY;
 
         // Only process mouse movement if there actually was movement
         if (deltaX == 0 && deltaY == 0) return;

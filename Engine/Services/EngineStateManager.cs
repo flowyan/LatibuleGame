@@ -1,20 +1,18 @@
 ﻿using Engine.Core;
-using OpenTK.Windowing.Desktop;
+using Engine.Windowing;
 
 namespace Engine.Services;
 
 public static class EngineStateManager
 {
-    public static void Initialize(GameWindow gameWindow)
+    public static void Initialize(EngineAppWindow gameWindow)
     {
         EngineStates.Initialize(gameWindow);
-        Input.Initialize(gameWindow.KeyboardState, gameWindow.MouseState);
         EngineStates.GameWindow =  gameWindow;
     }
 
-    public static void Update(GameWindow gameWindow)
+    public static void Update(EngineAppWindow gameWindow)
     {
         EngineStates.GameWindow = gameWindow;
-        Input.Update(gameWindow.KeyboardState, gameWindow.MouseState);
     }
 }

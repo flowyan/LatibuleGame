@@ -8,7 +8,7 @@ public static class RenderQueue
     {
         foreach (var layer in Enum.GetValues<RenderLayer>())
         {
-            if (layer == RenderLayer.Skybox) EngineWindow._SkyboxRenderer.Render();
+            if (layer == RenderLayer.Skybox) LatibuleEngine._SkyboxRenderer.Render();
             LatibuleEngine.Map?.OnRenderFrame(args, layer);
             if (layer == RenderLayer.DebugOutline) LatibuleEngine.Physics.OnRenderFrame(args);
         }
