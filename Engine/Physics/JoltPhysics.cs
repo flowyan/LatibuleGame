@@ -39,7 +39,7 @@ public class JoltPhysics : IDisposable
     private const double MaxPhysicsFrameTime = 0.25;
     private const int MaxPhysicsStepsPerFrame = 8;
 
-    private const int CollisionStepsPerUpdate = 2;
+    private const int CollisionStepsPerUpdate = 1;
     private const float PushableBoxMass = 70f;
     private const float PushableBoxFriction = 20f;
     private const float PushableBoxLinearDamping = 0.05f;
@@ -161,13 +161,14 @@ public class JoltPhysics : IDisposable
             var transform = BodyInterface.GetTransformedShape(BodyLockInterface, bodyTuple.Item1);
             DrawTransformedShapeWireframe(transform, new JoltColor(bodyTuple.Item2));
         }
+
         foreach (var bodyID in Bodies)
         {
             var transform = BodyInterface.GetTransformedShape(BodyLockInterface, bodyID);
             DrawTransformedShapeWireframe(transform, new JoltColor(0xFF00FF));
         }
     }
-    
+
     // if (_ignoreDrawBodies.Contains(bodyID)) continue;
 
     // var renderer = new ShapeRenderer(
@@ -451,7 +452,7 @@ public class JoltPhysics : IDisposable
     protected virtual void OnContactPersisted(PhysicsSystem system, in Body body1, in Body body2, in ContactManifold manifold, ref ContactSettings settings)
     {
         // Override the restitution to 0.5
-        settings.CombinedRestitution = 0.5f;
+        // settings.CombinedRestitution = 0.5f;
         // LogDebug("A contact was persisted");
     }
 
