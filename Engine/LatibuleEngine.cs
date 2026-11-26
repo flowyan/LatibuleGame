@@ -36,6 +36,8 @@ public class LatibuleEngine : EngineAppWindow
     public static JoltPhysics Physics { get; private set; } = new();
     public static SkyboxRenderer _SkyboxRenderer { get; private set; } = null!;
 
+    public static Random Rng = new();
+
     public LatibuleEngine(SDLNativeWindowSettings nativeWindowSettings) : base(
         nativeWindowSettings
     )
