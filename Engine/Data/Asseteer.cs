@@ -8,6 +8,7 @@ using Engine.Rendering;
 using Engine.Rendering.Text;
 using FontStashSharp;
 using OpenTK.Mathematics;
+using SDL3;
 using static Engine.Core.Logger;
 using Vector2 = System.Numerics.Vector2;
 
@@ -24,7 +25,7 @@ public class Asseteer(AsseteerPaths paths)
     private static readonly Dictionary<string, Texture2D> LoadedTextures = [];
     private static readonly Dictionary<string, CubemapTexture> LoadedCubemaps = [];
 
-    // private static readonly Dictionary<string, Func<WaveStream>> LoadedSoundsList = [];
+    private static readonly Dictionary<string, IntPtr> LoadedSoundsList = [];
     private static readonly Dictionary<string, Shader> LoadedShaders = [];
     private static readonly Dictionary<string, Scene> LoadedModels = [];
 
@@ -51,18 +52,18 @@ public class Asseteer(AsseteerPaths paths)
     public void LoadAssets()
     {
         LoadEssentialAssets();
-        FontRenderer.Begin();
-        // After loading fonts we can show a brief loading
-        var font = FontSystem.GetFont(FontSize);
-        font.DrawText(
-            FontRenderer,
-            "LOADING LOL",
-            new Vector2(10, 10),
-            FSColor.Red,
-            0,
-            Vector2.Zero,
-            Vector2.One
-        );
+        // FontRenderer.Begin();
+        // // After loading fonts we can show a brief loading
+        // var font = FontSystem.GetFont(FontSize);
+        // font.DrawText(
+        //     FontRenderer,
+        //     "LOADING LOL",
+        //     new Vector2(10, 10),
+        //     FSColor.Red,
+        //     0,
+        //     Vector2.Zero,
+        //     Vector2.One
+        // );
 
         LoadSounds();
         LoadModels();
@@ -226,11 +227,6 @@ public class Asseteer(AsseteerPaths paths)
 
         foreach (var file in soundDir.EnumerateFiles("*", SearchOption.AllDirectories))
         {
-            var extension = file.Extension.ToLowerInvariant();
-
-            if (extension is not ".ogg" and not ".wav" and not ".mp3")
-                continue;
-
             var relativePath = Path.GetRelativePath(dirPath, file.FullName);
             var soundName = Path.ChangeExtension(relativePath, null)!
                 .Replace('\\', '/')
@@ -238,26 +234,16 @@ public class Asseteer(AsseteerPaths paths)
 
             try
             {
-                // LoadedSoundsList[soundName] = () => CreateSoundStream(file.FullName, extension);
+                LogInfo($"Loading sound: {soundName} ({file.Name})");
+                LoadedSoundsList[soundName] = Mixer.LoadAudio(AudioEngine.MixerDevice, file.FullName, predecode: true);
                 LogInfo($"Loaded sound: {soundName} ({file.Name})");
             }
             catch (Exception e)
             {
-                LogError($"Failed to register sound: {soundName} ({file.Name}) - {e}");
+                LogError($"Failed to load sound: {soundName} ({file.Name}) - {e}");
             }
         }
     }
-
-    // private static WaveStream CreateSoundStream(string filePath, string extension)
-    // {
-    //     return extension switch
-    //     {
-    //         ".ogg" => new VorbisWaveReader(filePath),
-    //         ".wav" => new AudioFileReader(filePath),
-    //         ".mp3" => new AudioFileReader(filePath),
-    //         _ => throw new NotSupportedException($"Unsupported sound format: {extension}")
-    //     };
-    // }
 
     private void LoadShaders()
     {
@@ -300,7 +286,7 @@ public class Asseteer(AsseteerPaths paths)
 
     private static string ResolveShaderNameForContext(string shaderName)
     {
-        if (!EngineWindow.IS_EDITOR || shaderName != "mesh/shader") return shaderName;
+        if (!LatibuleEngine.IS_EDITOR || shaderName != "mesh/shader") return shaderName;
 
         const string editorMeshShaderName = "editormesh/shader";
 
@@ -371,24 +357,14 @@ public class Asseteer(AsseteerPaths paths)
         var file = soundAsset.ToString();
         var soundName = $"{folder}/{file}";
 
-        // if (!LoadedSoundsList.TryGetValue(soundName, out var soundFactory))
-        // {
-        //     LogError($"Sound '{soundName}' was not found.");
-        //     return;
-        // }
-        //
-        // var sound = soundFactory();
-        // var outputDevice = new WaveOutEvent();
-        //
-        // outputDevice.PlaybackStopped += (_, _) =>
-        // {
-        //     outputDevice.Dispose();
-        //     sound.Dispose();
-        // };
-        //
-        // outputDevice.Init(sound);
-        // outputDevice.Volume = volume;
-        // outputDevice.Play();
+        if (!LoadedSoundsList.TryGetValue(soundName, out var loadedAudio))
+        {
+            LogError($"Sound '{soundName}' was not found.");
+            return;
+        }
+
+        AudioEngine.PlayAudio(loadedAudio);
+        // AudioEngine.PendingAudios.Add(loadedAudio);
     }
 
     // public static void PlaySteamAudioSound<TEnum>(TEnum soundAsset, Vector3 soundPosition, float volume = 0.5f)
