@@ -14,6 +14,18 @@
         <None Include="Assets\**\*">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
+        <None Update="Assets\sound\misc\meow.ogg">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Assets\sound\misc\scarletfire.ogg">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Assets\sound\misc\sleepphonk.ogg">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Assets\sound\music\scarletfire.ogg">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
     <ItemGroup>
@@ -23,7 +35,9 @@
         <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
         <PackageReference Include="JoltPhysicsSharp" Version="2.20.1" />
         <PackageReference Include="OpenTK" Version="4.9.4"/>
-        <PackageReference Include="OpenTK.Audio.OpenAL" Version="4.9.4" />
+        <PackageReference Include="SDL3-CS" Version="3.4.20" />
+        <PackageReference Include="SDL3-CS.Linux" Version="3.4.20" />
+        <PackageReference Include="SDL3-CS.Linux.Mixer" Version="3.2.4.15" />
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12"/>
         <PackageReference Include="StbImageSharp" Version="2.30.15"/>
         <PackageReference Include="SteamAudio.NET" Version="4.6.1" />

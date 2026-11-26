@@ -1,45 +1,47 @@
 ﻿using System.Text;
 using Engine.Core;
 using Engine.Core.Types;
+using Engine.Windowing;
 using Latibule.Commands;
 using Latibule.Core;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 
 namespace Latibule.Services;
 
 public static class GameStateManager
 {
-    public static void Initialize(GameWindow gameWindow)
+    public static void Initialize(EngineAppWindow gameWindow)
     {
         // Init binds
         Input.BindComboPressed(
-            Keys.Escape,
+            SDL.Scancode.Escape,
             gameWindow.Close,
-            Keys.LeftShift
+            SDL.Scancode.LShift
         );
-        Input.BindKeyPressed(Keys.F1, () => GameStates.ShowHud = !GameStates.ShowHud);
-        Input.BindKeyPressed(Keys.F3, () => EngineStates.EnabledDebugOverlays[DebugOverlayType.Info] = !EngineStates.EnabledDebugOverlays[DebugOverlayType.Info]);
+        Input.BindKeyPressed(SDL.Scancode.F1, () => GameStates.ShowHud = !GameStates.ShowHud);
+        Input.BindKeyPressed(SDL.Scancode.F3, () => EngineStates.EnabledDebugOverlays[DebugOverlayType.Info] = !EngineStates.EnabledDebugOverlays[DebugOverlayType.Info]);
         Input.BindComboPressed(
-            Keys.B,
+            SDL.Scancode.B,
             () => EngineStates.EnabledDebugOverlays[DebugOverlayType.BoundingBoxes] = !EngineStates.EnabledDebugOverlays[DebugOverlayType.BoundingBoxes],
-            Keys.F3
+            SDL.Scancode.F3
         );
         Input.BindComboPressed(
-            Keys.L,
+            SDL.Scancode.L,
             () => EngineStates.EnabledDebugOverlays[DebugOverlayType.PointLights] = !EngineStates.EnabledDebugOverlays[DebugOverlayType.PointLights],
-            Keys.F3
+            SDL.Scancode.F3
         );
-        Input.BindKeyPressed(Keys.F5, () => new ReloadWorld().Execute([]));
-        Input.BindKeyPressed(Keys.F11, () => gameWindow.WindowState = gameWindow.WindowState == WindowState.Fullscreen ? WindowState.Normal : WindowState.Fullscreen);
+        Input.BindKeyPressed(SDL.Scancode.F5, () => new ReloadWorld().Execute([]));
+        Input.BindKeyPressed(SDL.Scancode.F11, () => gameWindow.WindowState = gameWindow.WindowState == WindowState.Fullscreen ? WindowState.Normal : WindowState.Fullscreen);
 
-        Input.BindKeyPressed(Keys.GraveAccent, () =>
+        Input.BindKeyPressed(SDL.Scancode.Grave, () =>
         {
             if (GameStates.CurrentGui == null) SetUiOnScreen(new DevConsoleWindow(), imgui: true);
         });
 
-        Input.BindKeyPressed(Keys.Escape, () =>
+        Input.BindKeyPressed(SDL.Scancode.Escape, () =>
         {
             if (GameStates.CurrentGui != null) SetUiOnScreen();
         });
@@ -52,7 +54,7 @@ public static class GameStateManager
         if (GameStates.HasDeveloperKey) Logger.LogInfo("Developer key found. Developer tools granted.");
     }
 
-    public static void Update(GameWindow gameWindow)
+    public static void Update(EngineAppWindow engineAppWindow)
     {
         DevConsole.IsOpen = GameStates.CurrentGui is DevConsoleWindow;
     }

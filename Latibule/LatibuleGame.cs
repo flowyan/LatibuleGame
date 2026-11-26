@@ -3,27 +3,29 @@ using Engine;
 using Engine.Core.ImGuiNet;
 using Engine.Data;
 using Engine.Physics;
+using Engine.Windowing;
 using ImGuiNET;
 using Latibule.Entities;
 using Latibule.Maps;
 using Latibule.Services;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
+using SDL3;
 using static Engine.Core.Logger;
 using Metadata = Latibule.Core.Metadata;
 
 namespace Latibule;
 
-public class LatibuleGame : EngineWindow
+public class LatibuleGame : LatibuleEngine
 {
     public static Player Player { get; internal set; } = null!;
 
-    public LatibuleGame(NativeWindowSettings nativeWindowSettings) : base(
-        new GameWindowSettings
-        {
-            UpdateFrequency = GameOptions.TargetFPS,
-            Win32SuspendTimerOnDrag = true, // Turning this off gives the player physics a bunch of issues when dragging the window
-        },
+    public LatibuleGame(SDLNativeWindowSettings nativeWindowSettings) : base(
+        // new GameWindowSettings
+        // {
+        //     UpdateFrequency = GameOptions.TargetFPS,
+        //     Win32SuspendTimerOnDrag = true, // Turning this off gives the player physics a bunch of issues when dragging the window
+        // },
         nativeWindowSettings
     )
     {
@@ -40,10 +42,10 @@ public class LatibuleGame : EngineWindow
 
         // Load the essential assets
         CursorState = CursorState.Grabbed;
-        LatibuleEngine.Map = TestingMap.Create();
+        Map = TestingMap.Create();
 
-        // LatibuleEngine.Map = PhysicsTestMap.Create();
-        LatibuleEngine.Map.OnLoad();
+        // Map = PhysicsTestMap.Create();
+        Map.OnLoad();
 
         // Asseteer.PlaySteamAudioSound(SoundAsset.scarletfire, new Vector3(0, 1, -7.5f), 0.75f);
     }
@@ -54,7 +56,7 @@ public class LatibuleGame : EngineWindow
         base.OnUpdateFrame(args);
 
         GameStateManager.Update(this);
-        LatibuleEngine.Map.OnUpdateFrame(args);
+        Map.OnUpdateFrame(args);
 
         // Core.SteamAudio.SetListenerPosition(Player.Transform.Position, Player.Camera.Direction, Vector3Direction.Up);
     }
@@ -69,13 +71,6 @@ public class LatibuleGame : EngineWindow
     {
         if (GameStates.CurrentGui is null) return;
 
-        ImguiImplOpenGL3.NewFrame();
-        ImguiImplOpenTK4.NewFrame();
-        ImGui.NewFrame();
-
         GameStates.CurrentGui.OnRenderFrame(args);
-
-        ImGui.Render();
-        ImguiImplOpenGL3.RenderDrawData(ImGui.GetDrawData());
     }
 }

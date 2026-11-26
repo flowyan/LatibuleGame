@@ -1,9 +1,8 @@
-﻿using Engine.Core;
-using Engine.Utilities;
-using Latibule.Core;
+﻿using Engine.Windowing;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
+using SDL3;
 using Metadata = Latibule.Core.Metadata;
 
 namespace Latibule;
@@ -22,9 +21,16 @@ public static class Program
         NumberOfSamples = 4,
     };
 
-    public static void Main()
+    private static readonly SDLNativeWindowSettings _settings = new()
     {
-        using var game = new LatibuleGame(_windowSettings);
-        game.Run();
+        ClientSize = new Vector2i(1920, 1080),
+        Title = $"{Metadata.GAME_NAME} {Metadata.GAME_VERSION}",
+        APIVersion = new Version(4, 6),
+    };
+
+    public static void Main(string[] args)
+    {
+        EngineAppWindow.CreateGame = () => new LatibuleGame(_settings);
+        SDL.RunMainCallbacks<EngineAppWindow>(args);
     }
 }

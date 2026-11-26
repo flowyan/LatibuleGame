@@ -90,7 +90,7 @@ public class DebugInfoOverlay : BaseComponent
             $"Time: {DateTime.Now:HH:mm:ss}",
             $"Resolution: {gameWindow.ClientSize.X}x{gameWindow.ClientSize.Y}",
             $"{_gpu[..Math.Min(_gpu.Length, 40)]}{(_gpu.Length > 40 ? "..." : "")}",
-            $"{gameWindow.API.ToString()} {gameWindow.APIVersion} (GLSL {_glslVersion})",
+            // $"{gameWindow.API.ToString()} {gameWindow.APIVersion} (GLSL {_glslVersion})",
         ];
         DrawTextArray(rightAlignedTexts, rightSidePosition, FSColor.White, true);
     }

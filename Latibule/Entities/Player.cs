@@ -10,7 +10,8 @@ using Latibule.Core.Gameplay;
 using Latibule.Core.Types;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
+using MouseButton = Engine.Core.MouseButton;
 
 namespace Latibule.Entities;
 
@@ -103,7 +104,7 @@ public class Player : GameObject
         SyncCharacterToTransform();
 
         // Bind inputs
-        Input.BindKeyPressed(Keys.R, () =>
+        Input.BindKeyPressed(SDL.Scancode.R, () =>
         {
             Transform.Position = StartingCoords;
             Velocity = Vector3.Zero;
@@ -115,19 +116,19 @@ public class Player : GameObject
 
             Body.SetLinearVelocity(System.Numerics.Vector3.Zero);
         });
-        Input.BindKeyPressed(Keys.V, ToggleNoclip);
-        Input.BindKeyPressed(Keys.P, () => Punch(LatibuleEngine.Camera.Direction, 15f));
+        Input.BindKeyPressed(SDL.Scancode.V, ToggleNoclip);
+        Input.BindKeyPressed(SDL.Scancode.P, () => Punch(LatibuleEngine.Camera.Direction, 15f));
 
-        Input.BindKeyPressed(Keys.D1, () => Inventory.SelectedItemIndex = 1);
-        Input.BindKeyPressed(Keys.D2, () => Inventory.SelectedItemIndex = 2);
-        Input.BindKeyPressed(Keys.D3, () => Inventory.SelectedItemIndex = 3);
-        Input.BindKeyPressed(Keys.D4, () => Inventory.SelectedItemIndex = 4);
-        Input.BindKeyPressed(Keys.D5, () => Inventory.SelectedItemIndex = 5);
-        Input.BindKeyPressed(Keys.D6, () => Inventory.SelectedItemIndex = 6);
-        Input.BindKeyPressed(Keys.D7, () => Inventory.SelectedItemIndex = 7);
-        Input.BindKeyPressed(Keys.D8, () => Inventory.SelectedItemIndex = 8);
-        Input.BindKeyPressed(Keys.D9, () => Inventory.SelectedItemIndex = 9);
-        Input.BindKeyPressed(Keys.D0, () => Inventory.SelectedItemIndex = -1);
+        Input.BindKeyPressed(SDL.Scancode.Alpha1, () => Inventory.SelectedItemIndex = 1);
+        Input.BindKeyPressed(SDL.Scancode.Alpha2, () => Inventory.SelectedItemIndex = 2);
+        Input.BindKeyPressed(SDL.Scancode.Alpha3, () => Inventory.SelectedItemIndex = 3);
+        Input.BindKeyPressed(SDL.Scancode.Alpha4, () => Inventory.SelectedItemIndex = 4);
+        Input.BindKeyPressed(SDL.Scancode.Alpha5, () => Inventory.SelectedItemIndex = 5);
+        Input.BindKeyPressed(SDL.Scancode.Alpha6, () => Inventory.SelectedItemIndex = 6);
+        Input.BindKeyPressed(SDL.Scancode.Alpha7, () => Inventory.SelectedItemIndex = 7);
+        Input.BindKeyPressed(SDL.Scancode.Alpha8, () => Inventory.SelectedItemIndex = 8);
+        Input.BindKeyPressed(SDL.Scancode.Alpha9, () => Inventory.SelectedItemIndex = 9);
+        Input.BindKeyPressed(SDL.Scancode.Alpha0, () => Inventory.SelectedItemIndex = -1);
     }
 
     public void ToggleNoclip()
@@ -159,14 +160,11 @@ public class Player : GameObject
 
         var deltaTime = (float)args.Time;
 
-        var ms = EngineStates.MState;
-
-        if (ms.IsButtonDown(MouseButton.Left) && Controls.Cooldown(200)) LeftClickAction();
-        if (ms.WasButtonDown(MouseButton.Left) && ms.IsButtonReleased(MouseButton.Left)) Controls.ResetCooldown();
-        if (ms.IsButtonDown(MouseButton.Right) && Controls.Cooldown(200)) RightClickAction();
-        if (ms.WasButtonDown(MouseButton.Right) && ms.IsButtonReleased(MouseButton.Right)) Controls.ResetCooldown();
-
-        IsSneaking = Input.IsKeyDown(Keys.LeftShift) || Input.IsKeyDown(Keys.LeftControl);
+        if (Input.IsMouseDown(MouseButton.Left) && Controls.Cooldown(200)) LeftClickAction();
+        if (Input.IsMouseReleased(MouseButton.Left)) Controls.ResetCooldown();
+        if (Input.IsMouseDown(MouseButton.Right) && Controls.Cooldown(200)) RightClickAction();
+        if (Input.IsMouseReleased(MouseButton.Right)) Controls.ResetCooldown();
+        IsSneaking = Input.IsKeyDown(SDL.Scancode.LShift) || Input.IsKeyDown(SDL.Scancode.LCtrl);
 
         if (IsNoclip)
         {
@@ -174,11 +172,11 @@ public class Player : GameObject
             const float flySpeed = 12f;
             var forward = Vector3.Normalize(new Vector3(LatibuleEngine.Camera.Direction.X, 0, LatibuleEngine.Camera.Direction.Z));
             var right = Vector3.Normalize(Vector3.Cross(forward, Vector3Direction.Up));
-            if (Input.IsKeyDown(Keys.W)) flyMove += forward;
-            if (Input.IsKeyDown(Keys.S)) flyMove -= forward;
-            if (Input.IsKeyDown(Keys.D)) flyMove += right;
-            if (Input.IsKeyDown(Keys.A)) flyMove -= right;
-            if (Input.IsKeyDown(Keys.Space)) flyMove += Vector3Direction.Up;
+            if (Input.IsKeyDown(SDL.Scancode.W)) flyMove += forward;
+            if (Input.IsKeyDown(SDL.Scancode.S)) flyMove -= forward;
+            if (Input.IsKeyDown(SDL.Scancode.D)) flyMove += right;
+            if (Input.IsKeyDown(SDL.Scancode.A)) flyMove -= right;
+            if (Input.IsKeyDown(SDL.Scancode.Space)) flyMove += Vector3Direction.Up;
             if (IsSneaking) flyMove += Vector3Direction.Down;
             if (flyMove != Vector3.Zero) flyMove = Vector3.Normalize(flyMove);
             RawPosition += flyMove * flySpeed * deltaTime;
@@ -236,18 +234,18 @@ public class Player : GameObject
         var forward = Vector3.Normalize(new Vector3(LatibuleEngine.Camera.Direction.X, 0, LatibuleEngine.Camera.Direction.Z));
         var right = Vector3.Normalize(Vector3.Cross(forward, Vector3Direction.Up));
 
-        // Determine if movement keys are pressed
-        _isMovementPressed = Input.IsKeyDown(Keys.W) ||
-                             Input.IsKeyDown(Keys.A) ||
-                             Input.IsKeyDown(Keys.S) ||
-                             Input.IsKeyDown(Keys.D);
+        // Determine if movement SDL.Scancode are pressed
+        _isMovementPressed = Input.IsKeyDown(SDL.Scancode.W) ||
+                             Input.IsKeyDown(SDL.Scancode.A) ||
+                             Input.IsKeyDown(SDL.Scancode.S) ||
+                             Input.IsKeyDown(SDL.Scancode.D);
 
         // Create a movement vector from key inputs
         var analogMove = Vector2.Zero;
-        if (Input.IsKeyDown(Keys.W)) analogMove.Y += 1;
-        if (Input.IsKeyDown(Keys.S)) analogMove.Y -= 1;
-        if (Input.IsKeyDown(Keys.D)) analogMove.X += 1;
-        if (Input.IsKeyDown(Keys.A)) analogMove.X -= 1;
+        if (Input.IsKeyDown(SDL.Scancode.W)) analogMove.Y += 1;
+        if (Input.IsKeyDown(SDL.Scancode.S)) analogMove.Y -= 1;
+        if (Input.IsKeyDown(SDL.Scancode.D)) analogMove.X += 1;
+        if (Input.IsKeyDown(SDL.Scancode.A)) analogMove.X -= 1;
 
         // Normalize the input if it's non-zero
         if (analogMove != Vector2.Zero) analogMove = Vector2.Normalize(analogMove);
@@ -349,7 +347,7 @@ public class Player : GameObject
         }
 
         // Handle jumping - allow jumping when grounded and cooldown is complete
-        if (Input.IsKeyDown(Keys.Space) && IsGrounded && _jumpCooldown <= 0)
+        if (Input.IsKeyDown(SDL.Scancode.Space) && IsGrounded && _jumpCooldown <= 0)
         {
             Velocity.Y = _jumpForce;
             _jumpCooldown = _jumpCooldownTime;
