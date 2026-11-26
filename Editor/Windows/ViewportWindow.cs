@@ -13,6 +13,7 @@ using Latibule.Objects;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using MouseButton = Engine.Core.MouseButton;
 using Vector2 = OpenTK.Mathematics.Vector2;
 using Vector3 = OpenTK.Mathematics.Vector3;
 
@@ -65,11 +66,10 @@ public sealed class ViewportWindow : IEditorWindow, IDisposable
         if (LatibuleEngine.Camera is null || !_viewportImageHovered || _viewportWidth <= 0 || _viewportHeight <= 0)
             return;
 
-        var mouseX = Input.MouseState.X;
-        var mouseY = Input.MouseState.Y;
+        var mousePos = ImGui.GetMousePos();
 
-        var localX = mouseX - _viewportImageMin.X;
-        var localY = mouseY - _viewportImageMin.Y;
+        var localX = mousePos.X - _viewportImageMin.X;
+        var localY = mousePos.Y - _viewportImageMin.Y;
 
         if (localX < 0 || localY < 0 || localX > _viewportImageSize.X || localY > _viewportImageSize.Y)
             return;

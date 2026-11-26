@@ -6,6 +6,7 @@ using ImGuiNET;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 
 namespace Editor.Windows;
 
@@ -83,12 +84,12 @@ public sealed class InspectorWindow : IEditorWindow
             var forward = Vector3.Normalize(new Vector3(LatibuleEngine.Camera.Direction.X, 0, LatibuleEngine.Camera.Direction.Z));
             var right = Vector3.Normalize(Vector3.Cross(forward, Vector3Direction.Up));
 
-            if (Input.IsKeyDown(Keys.Up)) move += forward;
-            if (Input.IsKeyDown(Keys.Down)) move -= forward;
-            if (Input.IsKeyDown(Keys.Left)) move -= right;
-            if (Input.IsKeyDown(Keys.Right)) move += right;
-            if (Input.IsKeyDown(Keys.PageUp)) move += Vector3Direction.Up;
-            if (Input.IsKeyDown(Keys.PageDown)) move += Vector3Direction.Down;
+            if (Input.IsKeyDown(SDL.Scancode.Up)) move += forward;
+            if (Input.IsKeyDown(SDL.Scancode.Down)) move -= forward;
+            if (Input.IsKeyDown(SDL.Scancode.Left)) move -= right;
+            if (Input.IsKeyDown(SDL.Scancode.Right)) move += right;
+            if (Input.IsKeyDown(SDL.Scancode.Pageup)) move += Vector3Direction.Up;
+            if (Input.IsKeyDown(SDL.Scancode.Pagedown)) move += Vector3Direction.Down;
             if (move != Vector3.Zero) move = Vector3.Normalize(move);
 
             foreach (var go in MalletEditor.SelectedObjects)

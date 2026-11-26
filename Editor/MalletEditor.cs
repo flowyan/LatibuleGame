@@ -2,25 +2,26 @@
 using Editor.Data;
 using Editor.Windows;
 using Engine;
+using Engine.Audio;
 using Engine.Core;
 using Engine.Core.ECS;
 using Engine.Core.ImGuiNet;
 using Engine.Core.Types;
 using Engine.Utilities;
+using Engine.Windowing;
 using ImGuiNET;
 using JoltPhysicsSharp;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 using static Engine.Core.Logger;
-using Keys = OpenTK.Windowing.GraphicsLibraryFramework.Keys;
 using Metadata = Editor.Core.Metadata;
+using MouseButton = Engine.Core.MouseButton;
 
 namespace Editor;
 
-public class MalletEditor : EngineWindow
+public class MalletEditor : LatibuleEngine
 {
     public static IEnumerable<GameObject>? SelectedObjects { get; private set; }
 
@@ -32,12 +33,12 @@ public class MalletEditor : EngineWindow
         new BottomTabsWindow()
     ]);
 
-    public MalletEditor(NativeWindowSettings nativeWindowSettings) : base(
-        new GameWindowSettings
-        {
-            UpdateFrequency = EditorOptions.TargetFPS,
-            // Win32SuspendTimerOnDrag = true, // Turning this off gives the player physics a bunch of issues when dragging the window
-        },
+    public MalletEditor(SDLNativeWindowSettings nativeWindowSettings) : base(
+        // new GameWindowSettings
+        // {
+        //     UpdateFrequency = EditorOptions.TargetFPS,
+        //     // Win32SuspendTimerOnDrag = true, // Turning this off gives the player physics a bunch of issues when dragging the window
+        // },
         nativeWindowSettings
     )
     {
@@ -57,8 +58,6 @@ public class MalletEditor : EngineWindow
 
     protected override void OnSetupImGui()
     {
-        // IMGUI
-        ImGui.CreateContext();
         var io = ImGui.GetIO();
         io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
         io.Fonts.AddFontFromFileTTF("Assets/font/inter.ttf", 18f);
@@ -71,9 +70,6 @@ public class MalletEditor : EngineWindow
             style.WindowRounding = 0.0f;
             style.Colors[(int)ImGuiCol.WindowBg].W = 1.0f;
         }
-
-        ImguiImplOpenTK4.Init(this);
-        ImguiImplOpenGL3.Init();
     }
 
     private static bool UnlockedCamera;
@@ -107,13 +103,13 @@ public class MalletEditor : EngineWindow
             var slower = false;
             var forward = Vector3.Normalize(new Vector3(LatibuleEngine.Camera.Direction.X, 0, LatibuleEngine.Camera.Direction.Z));
             var right = Vector3.Normalize(Vector3.Cross(forward, Vector3Direction.Up));
-            if (Input.IsKeyDown(Keys.W)) flyMove += forward;
-            if (Input.IsKeyDown(Keys.S)) flyMove -= forward;
-            if (Input.IsKeyDown(Keys.D)) flyMove += right;
-            if (Input.IsKeyDown(Keys.A)) flyMove -= right;
-            if (Input.IsKeyDown(Keys.Space)) flyMove += Vector3Direction.Up;
-            if (Input.IsKeyDown(Keys.LeftControl)) flyMove += Vector3Direction.Down;
-            if (Input.IsKeyDown(Keys.LeftShift)) slower = true;
+            if (Input.IsKeyDown(SDL.Scancode.W)) flyMove += forward;
+            if (Input.IsKeyDown(SDL.Scancode.S)) flyMove -= forward;
+            if (Input.IsKeyDown(SDL.Scancode.D)) flyMove += right;
+            if (Input.IsKeyDown(SDL.Scancode.A)) flyMove -= right;
+            if (Input.IsKeyDown(SDL.Scancode.Space)) flyMove += Vector3Direction.Up;
+            if (Input.IsKeyDown(SDL.Scancode.LCtrl)) flyMove += Vector3Direction.Down;
+            if (Input.IsKeyDown(SDL.Scancode.LShift)) slower = true;
 
             var flySpeed = slower ? 6f : 12f; // Flying speed
 
@@ -127,20 +123,14 @@ public class MalletEditor : EngineWindow
 
     protected override void OnRenderFrame(FrameEventArgs e)
     {
+        AudioEngine.Update();
+        
         GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
         GL.Viewport(0, 0, ClientSize.X, ClientSize.Y);
         GL.ClearColor(0.05f, 0.05f, 0.07f, 1f);
         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
-        ImguiImplOpenGL3.NewFrame();
-        ImguiImplOpenTK4.NewFrame();
-        ImGui.NewFrame();
-
         _windowSystem.Render(e);
-
-        ImGui.Render();
-        ImguiImplOpenGL3.RenderDrawData(ImGui.GetDrawData());
-        SwapBuffers();
     }
 
     public override void Close()
@@ -172,7 +162,6 @@ public class MalletEditor : EngineWindow
 
         foreach (var child in obj.Children) child.DebugColor = new JoltColor(0, 0, 255);
 
-
         SelectedObjects = null;
         SelectedObjects = [obj];
 
@@ -202,8 +191,5 @@ public class MalletEditor : EngineWindow
         base.OnClosing(e);
 
         _windowSystem.Dispose();
-
-        ImguiImplOpenGL3.Shutdown();
-        ImguiImplOpenTK4.Shutdown();
     }
 }
