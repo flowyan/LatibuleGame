@@ -107,8 +107,8 @@ public class MalletEditor : LatibuleEngine
             if (Input.IsKeyDown(SDL.Scancode.S)) flyMove -= forward;
             if (Input.IsKeyDown(SDL.Scancode.D)) flyMove += right;
             if (Input.IsKeyDown(SDL.Scancode.A)) flyMove -= right;
-            if (Input.IsKeyDown(SDL.Scancode.Space)) flyMove += Vector3Direction.Up;
-            if (Input.IsKeyDown(SDL.Scancode.LCtrl)) flyMove += Vector3Direction.Down;
+            if (Input.IsKeyDown(SDL.Scancode.Space) | Input.IsKeyDown(SDL.Scancode.E)) flyMove += Vector3Direction.Up;
+            if (Input.IsKeyDown(SDL.Scancode.LCtrl) | Input.IsKeyDown(SDL.Scancode.Q)) flyMove += Vector3Direction.Down;
             if (Input.IsKeyDown(SDL.Scancode.LShift)) slower = true;
 
             var flySpeed = slower ? 6f : 12f; // Flying speed
